@@ -1,0 +1,24 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+*.log
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Generated data — reproducible via npm run data:*
+public/data/
+
+# Symlinked reference repos (browse in place, don't commit)
+/cau-outreach-12-5-16
+/nyc-geography-crosswalks
+/civic-ai-tools
+
+# Env files (API keys etc.) — never commit
+.env
+.env.local
+.env.*.local

@@ -1,0 +1,23 @@
+{
+  "name": "mome-map",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "data:boundaries": "tsx scripts/build_boundaries.ts",
+    "data:pois": "tsx scripts/fetch_pois.ts",
+    "data:census": "tsx scripts/fetch_census.ts",
+    "data:all": "npm run data:boundaries && npm run data:pois && npm run data:census"
+  },
+  "dependencies": {
+    "maplibre-gl": "^4.7.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12"
+  }
+}

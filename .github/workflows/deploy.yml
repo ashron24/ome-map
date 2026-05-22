@@ -1,0 +1,86 @@
+name: Build and deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Clone the boundary-data source repo alongside this checkout so the
+      # boundaries ETL can find ./nyc-geography-crosswalks/outputs/.
+      - name: Clone nyc-geography-crosswalks
+        run: |
+          git clone --depth 1 https://github.com/MODA-NYC/nyc-geography-crosswalks ../nyc-geography-crosswalks
+          ln -sfn ../nyc-geography-crosswalks ./nyc-geography-crosswalks
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Try to use the latest published boundaries release. Fall back to
+      # running the upstream Python pipeline if no release asset is available.
+      - name: Fetch latest boundaries release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          mkdir -p ../nyc-geography-crosswalks/outputs/release
+          if gh release download \
+              --repo MODA-NYC/nyc-geography-crosswalks \
+              --pattern 'all_boundaries.geojson' \
+              --dir ../nyc-geography-crosswalks/outputs/release; then
+            run_dir="../nyc-geography-crosswalks/outputs/$(date -u +%Y-%m-%d_%H%M%S_UTC)"
+            mkdir -p "$run_dir"
+            mv ../nyc-geography-crosswalks/outputs/release/all_boundaries.geojson "$run_dir/"
+            echo "Using release asset at $run_dir/all_boundaries.geojson"
+          else
+            echo "No matching release asset; boundaries ETL will be skipped"
+          fi
+        continue-on-error: true
+
+      - name: Build data
+        env:
+          DC_API_KEY: ${{ secrets.DC_API_KEY }}
+        run: |
+          npm run data:boundaries || echo "[deploy] boundaries skipped"
+          npm run data:pois || echo "[deploy] pois skipped"
+          npm run data:census || echo "[deploy] census skipped"
+
+      - name: Build site
+        env:
+          # GH Pages project sites serve at /<repo>/ — Vite needs `base` set to match.
+          # If you deploy to a user/org site (<user>.github.io) or custom domain at root,
+          # set the repo variable VITE_BASE_PATH=/ instead.
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
