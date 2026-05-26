@@ -7,7 +7,7 @@ export type EthnicityLayer = {
   label: string;
   prop: string;
   color: string;
-  group: "hispanic" | "asian";
+  group: "hispanic" | "asian" | "other";
 };
 
 const SOURCE_ID = "ethnicity-centroids";
@@ -29,6 +29,10 @@ export const ETHNICITY_LAYERS: EthnicityLayer[] = [
   { id: "filipino",          label: "Filipino",           prop: "cnt_filipino",           color: "#fc8d62", group: "asian" },
   { id: "asian-indian",      label: "Asian Indian",       prop: "cnt_asian_indian",       color: "#8da0cb", group: "asian" },
   { id: "bangladeshi",       label: "Bangladeshi",        prop: "cnt_bangladeshi",        color: "#e78ac3", group: "asian" },
+  { id: "pakistani",         label: "Pakistani",          prop: "cnt_pakistani",          color: "#7570b3", group: "asian" },
+  { id: "arab",              label: "Arab",               prop: "cnt_arab",               color: "#e6ab02", group: "other" },
+  { id: "turkish",           label: "Turkish",            prop: "cnt_turkish",            color: "#d95f02", group: "other" },
+  { id: "albanian",          label: "Albanian",           prop: "cnt_albanian",           color: "#66a61e", group: "other" },
 ];
 
 let popup: Popup | null = null;
@@ -118,6 +122,15 @@ function wirePopup(map: MlMap): void {
 
     rows.push(`<dt style="margin-top:6px;border-top:1px solid #ddd;padding-top:4px">Asian Origin</dt><dd></dd>`);
     for (const layer of ETHNICITY_LAYERS.filter((l) => l.group === "asian")) {
+      const v = props[layer.prop];
+      if (v === null || v === undefined) continue;
+      const n = Number(v);
+      if (!Number.isFinite(n)) continue;
+      rows.push(`<dt>${escapeHtml(layer.label)}</dt><dd>${n.toLocaleString("en-US")}</dd>`);
+    }
+
+    rows.push(`<dt style="margin-top:6px;border-top:1px solid #ddd;padding-top:4px">Arab / Turkish / Albanian</dt><dd></dd>`);
+    for (const layer of ETHNICITY_LAYERS.filter((l) => l.group === "other")) {
       const v = props[layer.prop];
       if (v === null || v === undefined) continue;
       const n = Number(v);

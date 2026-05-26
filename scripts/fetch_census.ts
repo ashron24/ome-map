@@ -46,6 +46,11 @@ const ACS_VARS = {
   B02015_012E: "cnt_filipino",
   B02015_021E: "cnt_asian_indian",
   B02015_022E: "cnt_bangladeshi",
+  B02015_025E: "cnt_pakistani",
+  // Ancestry table (B04006 — People Reporting Ancestry; race-independent, 5-yr tract-level)
+  B04006_006E: "cnt_arab",
+  B04006_091E: "cnt_turkish",
+  B04006_003E: "cnt_albanian",
 } as const;
 
 type ShortName = (typeof ACS_VARS)[keyof typeof ACS_VARS];
@@ -172,6 +177,8 @@ const ETHNICITY_PROPS: ShortName[] = [
   "cnt_mexican", "cnt_puerto_rican", "cnt_cuban", "cnt_dominican",
   "cnt_central_american", "cnt_south_american", "cnt_colombian", "cnt_ecuadorian",
   "cnt_chinese", "cnt_korean", "cnt_filipino", "cnt_asian_indian", "cnt_bangladeshi",
+  "cnt_pakistani",
+  "cnt_arab", "cnt_turkish", "cnt_albanian",
 ];
 
 async function main() {

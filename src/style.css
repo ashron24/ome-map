@@ -156,6 +156,23 @@ html, body {
   line-height: 1.4;
 }
 
+.ethnicity-subheading {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 8px 0 2px;
+  padding-top: 6px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.ethnicity-subheading:first-of-type {
+  margin-top: 2px;
+  border-top: none;
+  padding-top: 0;
+}
+
 .layer-row {
   display: flex;
   align-items: center;

@@ -124,33 +124,12 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
     }),
   );
 
-  const hasInitialHispanic = [...(deps.initialEthnicities ?? [])].some(
-    (id) => ETHNICITY_LAYERS.find((l) => l.id === id)?.group === "hispanic",
-  );
+  const hasInitialEthnicity = (deps.initialEthnicities?.size ?? 0) > 0;
   root.appendChild(
     buildGroup({
-      title: "Hispanic Population (ACS)",
-      collapsed: !hasInitialHispanic,
-      body: buildEthnicityList(
-        ETHNICITY_LAYERS.filter((l) => l.group === "hispanic"),
-        deps.map,
-        activeEthnicities,
-      ),
-    }),
-  );
-
-  const hasInitialAsian = [...(deps.initialEthnicities ?? [])].some(
-    (id) => ETHNICITY_LAYERS.find((l) => l.id === id)?.group === "asian",
-  );
-  root.appendChild(
-    buildGroup({
-      title: "Asian Population (ACS)",
-      collapsed: !hasInitialAsian,
-      body: buildEthnicityList(
-        ETHNICITY_LAYERS.filter((l) => l.group === "asian"),
-        deps.map,
-        activeEthnicities,
-      ),
+      title: "Ethnicity (ACS)",
+      collapsed: !hasInitialEthnicity,
+      body: buildEthnicitySection(deps.map, activeEthnicities),
     }),
   );
 }
@@ -319,20 +298,32 @@ function swatchClass(def: POIDef): string {
   return "poly";
 }
 
-function buildEthnicityList(
-  defs: EthnicityLayer[],
-  map: MlMap,
-  active: Set<string>,
-): HTMLElement {
-  const list = document.createElement("div");
+function buildEthnicitySection(map: MlMap, active: Set<string>): HTMLElement {
+  const container = document.createElement("div");
+
   const note = document.createElement("p");
   note.className = "layer-note";
-  note.textContent = "Circle area is proportional to population count per census tract.";
-  list.appendChild(note);
-  for (const d of defs) {
-    list.appendChild(buildEthnicityRow(d, map, active));
+  note.textContent = "Circle area is proportional to population count per census tract. Arab, Turkish, and Albanian reflect self-reported ancestry (Census B04006).";
+  container.appendChild(note);
+
+  const sections: { label: string; group: EthnicityLayer["group"] }[] = [
+    { label: "Hispanic / Latino", group: "hispanic" },
+    { label: "Asian", group: "asian" },
+    { label: "Arab / Turkish / Albanian", group: "other" },
+  ];
+
+  for (const section of sections) {
+    const heading = document.createElement("div");
+    heading.className = "ethnicity-subheading";
+    heading.textContent = section.label;
+    container.appendChild(heading);
+
+    for (const d of ETHNICITY_LAYERS.filter((l) => l.group === section.group)) {
+      container.appendChild(buildEthnicityRow(d, map, active));
+    }
   }
-  return list;
+
+  return container;
 }
 
 function buildEthnicityRow(
