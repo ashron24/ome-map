@@ -61,7 +61,7 @@ export const METRICS: DemographicMetric[] = [
   },
   {
     id: "pct_black",
-    label: "% Black",
+    label: "% Black (non-Hispanic)",
     prop: "pct_black",
     type: "percent",
     breaks: PCT_BREAKS,
@@ -69,7 +69,7 @@ export const METRICS: DemographicMetric[] = [
   },
   {
     id: "pct_asian",
-    label: "% Asian",
+    label: "% Asian (non-Hispanic)",
     prop: "pct_asian",
     type: "percent",
     breaks: PCT_BREAKS,
