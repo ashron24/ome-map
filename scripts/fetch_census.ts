@@ -13,55 +13,46 @@ type FeatureCollection = {
   features: Feature[];
 };
 
-type DCObservationResponse = {
-  byVariable?: Record<
-    string,
-    {
-      byEntity?: Record<
-        string,
-        {
-          orderedFacets?: Array<{
-            facetId?: string;
-            observations?: Array<{ date?: string; value?: number }>;
-          }>;
-        }
-      >;
-    }
-  >;
-};
-
 const TARGET = join(process.cwd(), "public/data/census");
 const TRACTS_URL =
   "https://data.cityofnewyork.us/resource/63ge-mke6.geojson?$limit=5000";
-const DC_URL = "https://api.datacommons.org/v2/observation";
 
-// Variables to fetch from Data Commons (tract-level ACS5)
-const DC_VARS = [
-  "Count_Person",
-  "Count_Person_HispanicOrLatino",
-  "Count_Person_WhiteAloneNotHispanicOrLatino",
-  "Count_Person_BlackOrAfricanAmericanAlone",
-  "Count_Person_AsianAlone",
-  "Count_Person_ForeignBorn",
-  "Count_Person_NotAUSCitizen",
-  "Median_Income_Household",
-] as const;
+// ACS 5-Year endpoint — update ACS_YEAR when a newer release becomes available
+const ACS_YEAR = 2023;
+const ACS_BASE = `https://api.census.gov/data/${ACS_YEAR}/acs/acs5`;
 
-const SHORT: Record<(typeof DC_VARS)[number], string> = {
-  Count_Person: "totalpop",
-  Count_Person_HispanicOrLatino: "hispanic",
-  Count_Person_WhiteAloneNotHispanicOrLatino: "nh_white",
-  Count_Person_BlackOrAfricanAmericanAlone: "black_alone",
-  Count_Person_AsianAlone: "asian_alone",
-  Count_Person_ForeignBorn: "foreign_born",
-  Count_Person_NotAUSCitizen: "non_citizen",
-  Median_Income_Household: "median_hh_income",
-};
+// Census variable codes → internal short names used to compute the output properties
+const ACS_VARS = {
+  B01003_001E: "totalpop",         // Total population
+  B03002_012E: "hispanic",         // Hispanic or Latino (any race)
+  B03002_003E: "nh_white",         // Non-Hispanic White alone
+  B03002_004E: "black_alone",      // Non-Hispanic Black or African American alone
+  B03002_006E: "asian_alone",      // Non-Hispanic Asian alone
+  B05002_013E: "foreign_born",     // Foreign born
+  B05001_006E: "non_citizen",      // Not a US citizen
+  B19013_001E: "median_hh_income", // Median household income (past 12 months)
+} as const;
 
-// Prefer ACS 5yr survey facets
-const ACS5_FACET_KEYWORDS = ["CensusACS5YearSurvey", "CensusACS5yrSurvey"];
+type ShortName = (typeof ACS_VARS)[keyof typeof ACS_VARS];
+type ACSData = Partial<Record<ShortName, number>>;
 
-const BATCH_SIZE = 250;
+// Census Bureau uses large negative sentinels for suppressed/unavailable cells
+const SUPPRESSED = new Set([-666666666, -999999999, -888888888, -222222222]);
+
+const NYC_COUNTIES = ["005", "047", "061", "081", "085"]; // Bronx, Kings, NY, Queens, Richmond
+const NY_STATE = "36";
+
+function parseCensusValue(raw: string | null | undefined): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || SUPPRESSED.has(n) || n < 0) return null;
+  return n;
+}
+
+function pctOrNull(num: number | null, denom: number | null): number | null {
+  if (num === null || denom === null || denom <= 0) return null;
+  return Math.round((num / denom) * 1000) / 10; // one decimal place
+}
 
 async function fetchTractsGeometry(): Promise<FeatureCollection> {
   console.log("fetching NYC tract polygons from NYC Open Data...");
@@ -72,210 +63,111 @@ async function fetchTractsGeometry(): Promise<FeatureCollection> {
   return fc;
 }
 
+async function fetchACSByCounty(county: string, apiKey: string): Promise<Map<string, ACSData>> {
+  const varList = Object.keys(ACS_VARS).join(",");
+  const url =
+    `${ACS_BASE}?get=${varList}` +
+    `&for=tract:*&in=state:${NY_STATE}%20county:${county}` +
+    `&key=${apiKey}`;
 
-type PickedObs = { value: number; date: string; importName: string };
-
-async function fetchBatch(geoIds: string[]): Promise<Record<string, Record<string, PickedObs>>> {
-  const apiKey = process.env.DC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "DC_API_KEY env var is required (set via shell or .env from civic-ai-tools)",
-    );
-  }
-  const dcids = geoIds.map((g) => `geoId/${g}`);
-  const body = {
-    date: "LATEST",
-    entity: { dcids },
-    variable: { dcids: [...DC_VARS] },
-    select: ["entity", "variable", "value", "date"],
-  };
-  const res = await fetch(DC_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": apiKey,
-    },
-    body: JSON.stringify(body),
-  });
+  const res = await fetch(url);
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`DC HTTP ${res.status}: ${text.slice(0, 200)}`);
+    const body = await res.text();
+    throw new Error(`Census API ${res.status} (county ${county}): ${body.slice(0, 200)}`);
   }
-  const raw = (await res.json()) as DCObservationResponse & {
-    facets?: Record<string, { importName?: string }>;
-  };
-  const facetMeta = raw.facets ?? {};
-  const result: Record<string, Record<string, PickedObs>> = {};
-  for (const [varName, vData] of Object.entries(raw.byVariable ?? {})) {
-    const short = SHORT[varName as keyof typeof SHORT];
-    if (!short) continue;
-    for (const [dcid, eData] of Object.entries(vData.byEntity ?? {})) {
-      const geoid = dcid.replace(/^geoId\//, "");
-      const facets = eData.orderedFacets ?? [];
-      const picked = pickObservationWithProvenance(facets, facetMeta);
-      if (!picked) continue;
-      if (!result[geoid]) result[geoid] = {};
-      result[geoid][short] = picked;
+
+  const rows = (await res.json()) as string[][];
+  const [headers, ...data] = rows;
+
+  const result = new Map<string, ACSData>();
+  for (const row of data) {
+    const record: Record<string, string | null> = {};
+    headers.forEach((h, i) => { record[h] = row[i] ?? null; });
+
+    // Build 11-digit GEOID matching the geometry's `geoid` property
+    const geoid = `${record["state"]}${record["county"]}${record["tract"]}`;
+    const d: ACSData = {};
+    for (const [code, short] of Object.entries(ACS_VARS) as [string, ShortName][]) {
+      const v = parseCensusValue(record[code]);
+      if (v !== null) d[short] = v;
     }
+    result.set(geoid, d);
   }
   return result;
 }
 
-function pickObservationWithProvenance(
-  facets: Array<{
-    facetId?: string;
-    observations?: Array<{ date?: string; value?: number }>;
-  }>,
-  facetMeta: Record<string, { importName?: string }>,
-): PickedObs | null {
-  for (const facet of facets) {
-    const importName = facet.facetId
-      ? facetMeta[facet.facetId]?.importName ?? ""
-      : "";
-    const isACS5 = ACS5_FACET_KEYWORDS.some((k) => importName.includes(k));
-    if (isACS5) {
-      const obs = facet.observations?.[0];
-      if (obs?.value !== undefined && obs.value !== null) {
-        return { value: obs.value, date: obs.date ?? "", importName };
-      }
-    }
-  }
-  for (const facet of facets) {
-    const importName = facet.facetId
-      ? facetMeta[facet.facetId]?.importName ?? ""
-      : "";
-    const obs = facet.observations?.[0];
-    if (obs?.value !== undefined && obs.value !== null) {
-      return { value: obs.value, date: obs.date ?? "", importName };
-    }
-  }
-  return null;
-}
-
-function pctOrNull(num: number | undefined, denom: number | undefined): number | null {
-  if (num === undefined || denom === undefined || denom <= 0) return null;
-  return Math.round((num / denom) * 1000) / 10; // one decimal
+async function fetchAllACSData(apiKey: string): Promise<Map<string, ACSData>> {
+  console.log(
+    `fetching ACS ${ACS_YEAR} 5-Year for ${NYC_COUNTIES.length} NYC counties...`,
+  );
+  const combined = new Map<string, ACSData>();
+  await Promise.all(
+    NYC_COUNTIES.map(async (county) => {
+      const data = await fetchACSByCounty(county, apiKey);
+      for (const [geoid, d] of data) combined.set(geoid, d);
+      console.log(`  county ${county}: ${data.size} tracts`);
+    }),
+  );
+  console.log(`  total: ${combined.size} tracts with ACS data`);
+  return combined;
 }
 
 async function main() {
+  const apiKey = process.env.CENSUS_API_KEY;
+  if (!apiKey) {
+    console.error(
+      "Error: CENSUS_API_KEY environment variable is required.\n" +
+      "Get a free key at https://api.census.gov/data/key_signup.html\n" +
+      "Then run: CENSUS_API_KEY=your_key npm run data:census\n" +
+      "For GitHub Actions, add CENSUS_API_KEY as a repository secret.",
+    );
+    process.exit(1);
+  }
+
   mkdirSync(TARGET, { recursive: true });
-  const tracts = await fetchTractsGeometry();
 
-  const geoIds = tracts.features
-    .map((f) => (f.properties.geoid as string) ?? "")
-    .filter(Boolean);
-  console.log(`querying DC for ${geoIds.length} tracts, ${DC_VARS.length} vars, batches of ${BATCH_SIZE}`);
+  const [tracts, acsData] = await Promise.all([
+    fetchTractsGeometry(),
+    fetchAllACSData(apiKey),
+  ]);
 
-  const combined: Record<string, Record<string, { value: number; date: string }>> = {};
-  for (let i = 0; i < geoIds.length; i += BATCH_SIZE) {
-    const batch = geoIds.slice(i, i + BATCH_SIZE);
-    process.stdout.write(`  batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} tracts...`);
-    const data = await fetchBatch(batch);
-    Object.assign(combined, data);
-    const populated = Object.keys(data).length;
-    console.log(` ${populated} returned`);
-  }
-
-  // Per-variable provenance tally
-  const provenance: Record<string, { selected_vintage: string; coverage: Record<string, number>; sample_picked: Record<string, number> }> = {};
-  for (const short of Object.values(SHORT)) {
-    provenance[short] = {
-      selected_vintage: "",
-      coverage: { acs5_latest: 0, acs5_older: 0, decennial: 0, other: 0, no_data: 0 },
-      sample_picked: {},
-    };
-  }
-
-  let tractsWithData = 0;
+  let matched = 0;
   for (const f of tracts.features) {
-    const geoid = (f.properties.geoid as string) ?? "";
-    const dcData = combined[geoid];
-    if (!dcData) {
-      for (const short of Object.values(SHORT)) {
-        provenance[short].coverage.no_data += 1;
-      }
-      continue;
-    }
-    tractsWithData++;
+    const geoid = String(f.properties.geoid ?? "");
+    const d = acsData.get(geoid);
+    if (!d) continue;
+    matched++;
 
-    const totalpop = dcData.totalpop?.value;
-    const hispanic = dcData.hispanic?.value;
-    const nh_white = dcData.nh_white?.value;
-    const black_alone = dcData.black_alone?.value;
-    const asian_alone = dcData.asian_alone?.value;
-    const foreign_born = dcData.foreign_born?.value;
-    const non_citizen = dcData.non_citizen?.value;
-    const median_hh_income = dcData.median_hh_income?.value;
-
-    f.properties.totalpop = totalpop ?? null;
-    f.properties.median_hh_income = median_hh_income ?? null;
-    f.properties.pct_hispanic = pctOrNull(hispanic, totalpop);
-    f.properties.pct_nh_white = pctOrNull(nh_white, totalpop);
-    f.properties.pct_black = pctOrNull(black_alone, totalpop);
-    f.properties.pct_asian = pctOrNull(asian_alone, totalpop);
-    f.properties.pct_foreign_born = pctOrNull(foreign_born, totalpop);
-    f.properties.pct_non_citizen = pctOrNull(non_citizen, totalpop);
-
-    for (const short of Object.values(SHORT)) {
-      const obs = dcData[short];
-      const p = provenance[short];
-      if (!obs) {
-        p.coverage.no_data += 1;
-        continue;
-      }
-      const key = `${obs.importName}@${obs.date}`;
-      p.sample_picked[key] = (p.sample_picked[key] ?? 0) + 1;
-      const isACS5 = ACS5_FACET_KEYWORDS.some((k) => obs.importName.includes(k));
-      if (isACS5 && obs.date === "2024") p.coverage.acs5_latest += 1;
-      else if (isACS5) p.coverage.acs5_older += 1;
-      else if (obs.importName.includes("Decennial")) p.coverage.decennial += 1;
-      else p.coverage.other += 1;
-    }
-  }
-
-  // Pick the dominant vintage label per variable
-  for (const short of Object.keys(provenance)) {
-    const picks = provenance[short].sample_picked;
-    let topKey = "";
-    let topCount = 0;
-    for (const [k, n] of Object.entries(picks)) {
-      if (n > topCount) {
-        topCount = n;
-        topKey = k;
-      }
-    }
-    if (topKey) {
-      const [importName, date] = topKey.split("@");
-      provenance[short].selected_vintage = `${importName} ${date}`;
-    } else {
-      provenance[short].selected_vintage = "no data";
-    }
+    const totalpop = d.totalpop ?? null;
+    f.properties.totalpop = totalpop;
+    f.properties.median_hh_income = d.median_hh_income ?? null;
+    f.properties.pct_hispanic = pctOrNull(d.hispanic ?? null, totalpop);
+    f.properties.pct_nh_white = pctOrNull(d.nh_white ?? null, totalpop);
+    f.properties.pct_black = pctOrNull(d.black_alone ?? null, totalpop);
+    f.properties.pct_asian = pctOrNull(d.asian_alone ?? null, totalpop);
+    f.properties.pct_foreign_born = pctOrNull(d.foreign_born ?? null, totalpop);
+    f.properties.pct_non_citizen = pctOrNull(d.non_citizen ?? null, totalpop);
   }
 
   const outPath = join(TARGET, "tracts.geojson");
   const text = JSON.stringify(tracts);
   writeFileSync(outPath, text);
-  console.log(`\nwrote ${outPath}: ${tracts.features.length} tracts, ${tractsWithData} with DC data, ${(text.length / 1024 / 1024).toFixed(2)} MiB`);
+  console.log(
+    `\nwrote ${outPath}: ${tracts.features.length} tracts, ${matched} matched, ${(text.length / 1024 / 1024).toFixed(2)} MiB`,
+  );
 
   const meta = {
     generated_at: new Date().toISOString(),
+    acs_year: ACS_YEAR,
+    source: ACS_BASE,
     tract_source: TRACTS_URL,
-    dc_endpoint: DC_URL,
     tract_total: tracts.features.length,
-    tract_with_data: tractsWithData,
-    variables: DC_VARS.map((v) => {
-      const short = SHORT[v];
-      const p = provenance[short];
-      return {
-        dc_dcid: v,
-        output_key: short,
-        selected_vintage: p.selected_vintage,
-        coverage: p.coverage,
-        sample_picked: p.sample_picked,
-      };
-    }),
-    attribution:
-      "U.S. Census Bureau ACS 5-Year, served via Google Data Commons (https://datacommons.org)",
+    tract_with_data: matched,
+    variables: Object.entries(ACS_VARS).map(([code, short]) => ({
+      census_var: code,
+      output_key: short,
+    })),
+    attribution: `U.S. Census Bureau, American Community Survey ${ACS_YEAR} 5-Year Estimates`,
   };
   writeFileSync(join(TARGET, "_meta.json"), JSON.stringify(meta, null, 2));
   console.log(`metadata: ${join(TARGET, "_meta.json")}`);

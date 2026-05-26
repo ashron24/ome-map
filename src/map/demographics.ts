@@ -214,7 +214,7 @@ function wireDemographicsPopup(map: MlMap): void {
       .setHTML(
         `<div><strong>${escapeHtml(currentMetric.label)}</strong></div>` +
           `<dl>${rows.join("")}</dl>` +
-          `<div style="margin-top:6px;font-size:11px;color:#888;">Source: ACS 5-Year via <a class="attribution-link" href="https://datacommons.org" target="_blank" rel="noopener">Google Data Commons</a></div>`,
+          `<div style="margin-top:6px;font-size:11px;color:#888;">Source: <a class="attribution-link" href="https://www.census.gov/programs-surveys/acs" target="_blank" rel="noopener">U.S. Census Bureau ACS 5-Year</a></div>`,
       )
       .addTo(map);
   });

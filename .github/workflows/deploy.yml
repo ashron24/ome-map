@@ -57,7 +57,11 @@ jobs:
 
       - name: Build data
         env:
-          DC_API_KEY: ${{ secrets.DC_API_KEY }}
+          # CENSUS_API_KEY is required for the demographics (ACS) layer.
+          # Get a free key at https://api.census.gov/data/key_signup.html
+          # Add it as a repository secret — without it, census data is skipped
+          # and the Demographics panel will show no data.
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
         run: |
           # Boundaries: prefer crosswalks repo release asset; fall back to direct Open Data fetch
           npm run data:boundaries || npm run data:boundaries:direct || echo "[deploy] boundaries skipped"
