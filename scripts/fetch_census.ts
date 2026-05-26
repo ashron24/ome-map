@@ -23,14 +23,29 @@ const ACS_BASE = `https://api.census.gov/data/${ACS_YEAR}/acs/acs5`;
 
 // Census variable codes → internal short names used to compute the output properties
 const ACS_VARS = {
-  B01003_001E: "totalpop",         // Total population
-  B03002_012E: "hispanic",         // Hispanic or Latino (any race)
-  B03002_003E: "nh_white",         // Non-Hispanic White alone
-  B03002_004E: "black_alone",      // Non-Hispanic Black or African American alone
-  B03002_006E: "asian_alone",      // Non-Hispanic Asian alone
-  B05002_013E: "foreign_born",     // Foreign born
-  B05001_006E: "non_citizen",      // Not a US citizen
-  B19013_001E: "median_hh_income", // Median household income (past 12 months)
+  B01003_001E: "totalpop",           // Total population
+  B03002_012E: "hispanic",           // Hispanic or Latino (any race)
+  B03002_003E: "nh_white",           // Non-Hispanic White alone
+  B03002_004E: "black_alone",        // Non-Hispanic Black or African American alone
+  B03002_006E: "asian_alone",        // Non-Hispanic Asian alone
+  B05002_013E: "foreign_born",       // Foreign born
+  B05001_006E: "non_citizen",        // Not a US citizen
+  B19013_001E: "median_hh_income",   // Median household income (past 12 months)
+  // Hispanic subgroups (B03001 — Hispanic or Latino by Specific Origin)
+  B03001_004E: "cnt_mexican",
+  B03001_005E: "cnt_puerto_rican",
+  B03001_006E: "cnt_cuban",
+  B03001_007E: "cnt_dominican",
+  B03001_008E: "cnt_central_american",
+  B03001_016E: "cnt_south_american",
+  B03001_020E: "cnt_colombian",
+  B03001_021E: "cnt_ecuadorian",
+  // Asian subgroups (B02015 — Asian Alone by Detailed Group, 2023 structure)
+  B02015_002E: "cnt_chinese",
+  B02015_005E: "cnt_korean",
+  B02015_012E: "cnt_filipino",
+  B02015_021E: "cnt_asian_indian",
+  B02015_022E: "cnt_bangladeshi",
 } as const;
 
 type ShortName = (typeof ACS_VARS)[keyof typeof ACS_VARS];
@@ -112,6 +127,53 @@ async function fetchAllACSData(apiKey: string): Promise<Map<string, ACSData>> {
   return combined;
 }
 
+type Coord = [number, number];
+
+function ringCentroid(ring: Coord[]): Coord {
+  let cx = 0, cy = 0, area = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const cross = xj * yi - xi * yj;
+    area += cross;
+    cx += (xi + xj) * cross;
+    cy += (yi + yj) * cross;
+  }
+  area /= 2;
+  if (Math.abs(area) < 1e-12) {
+    const n = ring.length;
+    return [
+      ring.reduce((s, p) => s + p[0], 0) / n,
+      ring.reduce((s, p) => s + p[1], 0) / n,
+    ];
+  }
+  return [cx / (6 * area), cy / (6 * area)];
+}
+
+function computeCentroid(geometry: unknown): Coord | null {
+  const g = geometry as { type: string; coordinates: unknown[] } | null;
+  if (!g?.type) return null;
+  if (g.type === "Polygon") {
+    const outerRing = g.coordinates[0] as Coord[];
+    if (!outerRing?.length) return null;
+    return ringCentroid(outerRing);
+  }
+  if (g.type === "MultiPolygon") {
+    const parts = g.coordinates as Coord[][][];
+    if (!parts.length) return null;
+    const outerRings = parts.map((p) => p[0]).filter(Boolean);
+    const largest = outerRings.reduce((a, b) => b.length > a.length ? b : a);
+    return ringCentroid(largest);
+  }
+  return null;
+}
+
+const ETHNICITY_PROPS: ShortName[] = [
+  "cnt_mexican", "cnt_puerto_rican", "cnt_cuban", "cnt_dominican",
+  "cnt_central_american", "cnt_south_american", "cnt_colombian", "cnt_ecuadorian",
+  "cnt_chinese", "cnt_korean", "cnt_filipino", "cnt_asian_indian", "cnt_bangladeshi",
+];
+
 async function main() {
   const apiKey = process.env.CENSUS_API_KEY;
   if (!apiKey) {
@@ -131,6 +193,7 @@ async function main() {
     fetchAllACSData(apiKey),
   ]);
 
+  const centroidFeatures: Feature[] = [];
   let matched = 0;
   for (const f of tracts.features) {
     const geoid = String(f.properties.geoid ?? "");
@@ -147,6 +210,25 @@ async function main() {
     f.properties.pct_asian = pctOrNull(d.asian_alone ?? null, totalpop);
     f.properties.pct_foreign_born = pctOrNull(d.foreign_born ?? null, totalpop);
     f.properties.pct_non_citizen = pctOrNull(d.non_citizen ?? null, totalpop);
+
+    // ethnicity counts
+    for (const prop of ETHNICITY_PROPS) {
+      f.properties[prop] = d[prop] ?? null;
+    }
+
+    // centroid point for graduated symbol layers
+    const pt = computeCentroid(f.geometry);
+    if (pt) {
+      const centroidProps: Record<string, unknown> = { geoid, totalpop };
+      for (const prop of ETHNICITY_PROPS) {
+        centroidProps[prop] = d[prop] ?? null;
+      }
+      centroidFeatures.push({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: pt },
+        properties: centroidProps,
+      });
+    }
   }
 
   const outPath = join(TARGET, "tracts.geojson");
@@ -156,6 +238,11 @@ async function main() {
     `\nwrote ${outPath}: ${tracts.features.length} tracts, ${matched} matched, ${(text.length / 1024 / 1024).toFixed(2)} MiB`,
   );
 
+  const centroidsPath = join(TARGET, "tract-centroids.geojson");
+  const centroidsText = JSON.stringify({ type: "FeatureCollection", features: centroidFeatures });
+  writeFileSync(centroidsPath, centroidsText);
+  console.log(`wrote ${centroidsPath}: ${centroidFeatures.length} points, ${(centroidsText.length / 1024).toFixed(1)} KiB`);
+
   const meta = {
     generated_at: new Date().toISOString(),
     acs_year: ACS_YEAR,
@@ -163,6 +250,7 @@ async function main() {
     tract_source: TRACTS_URL,
     tract_total: tracts.features.length,
     tract_with_data: matched,
+    centroid_features: centroidFeatures.length,
     variables: Object.entries(ACS_VARS).map(([code, short]) => ({
       census_var: code,
       output_key: short,

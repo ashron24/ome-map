@@ -20,6 +20,11 @@ import {
   ensureDemographicsSource,
   setDemographicMetric,
 } from "./map/demographics.ts";
+import {
+  ETHNICITY_LAYERS,
+  ensureEthnicityCentroidsSource,
+  setEthnicityLayerVisible,
+} from "./map/ethnicityLayers.ts";
 import { mountLayerPanel } from "./ui/layerPanel.ts";
 import {
   debounce,
@@ -53,6 +58,7 @@ map.addControl(new ScaleControl({ unit: "imperial" }), "bottom-left");
 const state: AppState = {
   ...emptyState(),
   basemap: initialBasemap.id,
+  ethnicities: new Set(initialState.ethnicities),
 };
 
 function snapshotState(): AppState {
@@ -64,6 +70,7 @@ function snapshotState(): AppState {
     districts: state.districts,
     pois: state.pois,
     metric: state.metric,
+    ethnicities: state.ethnicities,
   };
 }
 
@@ -108,8 +115,10 @@ function mountPanel() {
     initialBasemap: state.basemap ?? DEFAULT_BASEMAP,
     activeDistricts: state.districts,
     activePOIs: state.pois,
+    activeEthnicities: state.ethnicities,
     onChange: persist,
     initialMetric: initialState.metric,
+    initialEthnicities: initialState.ethnicities,
   });
 }
 
@@ -137,6 +146,16 @@ async function applyInitialLayers() {
       state.metric = m.id;
       await ensureDemographicsSource(map);
       setDemographicMetric(map, m);
+    }
+  }
+  // Ethnicity layers
+  if (initialState.ethnicities.size > 0) {
+    await ensureEthnicityCentroidsSource(map);
+    for (const id of initialState.ethnicities) {
+      const def = ETHNICITY_LAYERS.find((l) => l.id === id);
+      if (!def) continue;
+      state.ethnicities.add(id);
+      setEthnicityLayerVisible(map, def, true);
     }
   }
 }

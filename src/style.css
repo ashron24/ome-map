@@ -149,6 +149,13 @@ html, body {
   padding: 4px 0 6px;
 }
 
+.layer-note {
+  font-size: 11px;
+  color: #888;
+  margin: 0 0 4px;
+  line-height: 1.4;
+}
+
 .layer-row {
   display: flex;
   align-items: center;

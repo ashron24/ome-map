@@ -16,6 +16,12 @@ import {
   ensureDemographicsSource,
   setDemographicMetric,
 } from "../map/demographics.ts";
+import { ETHNICITY_LAYERS } from "../map/ethnicityLayers.ts";
+import type { EthnicityLayer } from "../map/ethnicityLayers.ts";
+import {
+  ensureEthnicityCentroidsSource,
+  setEthnicityLayerVisible,
+} from "../map/ethnicityLayers.ts";
 
 type PanelDeps = {
   map: MlMap;
@@ -23,8 +29,10 @@ type PanelDeps = {
   initialBasemap?: BasemapId;
   activeDistricts: Set<string>;
   activePOIs: Set<string>;
+  activeEthnicities: Set<string>;
   onChange?: () => void;
   initialMetric?: string;
+  initialEthnicities?: Set<string>;
 };
 
 let onChangeCallback: (() => void) | undefined;
@@ -37,6 +45,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   const initialBasemap = deps.initialBasemap ?? DEFAULT_BASEMAP;
   const activeDistricts = deps.activeDistricts;
   const activePOIs = deps.activePOIs;
+  const activeEthnicities = deps.activeEthnicities;
   onChangeCallback = deps.onChange;
 
   root.innerHTML = "";
@@ -112,6 +121,36 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
       title: "Demographics (ACS)",
       collapsed: !deps.initialMetric,
       body: buildDemographicsControls(deps.map, deps.initialMetric),
+    }),
+  );
+
+  const hasInitialHispanic = [...(deps.initialEthnicities ?? [])].some(
+    (id) => ETHNICITY_LAYERS.find((l) => l.id === id)?.group === "hispanic",
+  );
+  root.appendChild(
+    buildGroup({
+      title: "Hispanic Population (ACS)",
+      collapsed: !hasInitialHispanic,
+      body: buildEthnicityList(
+        ETHNICITY_LAYERS.filter((l) => l.group === "hispanic"),
+        deps.map,
+        activeEthnicities,
+      ),
+    }),
+  );
+
+  const hasInitialAsian = [...(deps.initialEthnicities ?? [])].some(
+    (id) => ETHNICITY_LAYERS.find((l) => l.id === id)?.group === "asian",
+  );
+  root.appendChild(
+    buildGroup({
+      title: "Asian Population (ACS)",
+      collapsed: !hasInitialAsian,
+      body: buildEthnicityList(
+        ETHNICITY_LAYERS.filter((l) => l.group === "asian"),
+        deps.map,
+        activeEthnicities,
+      ),
     }),
   );
 }
@@ -278,6 +317,67 @@ function swatchClass(def: POIDef): string {
   if (def.geomType === "line") return "line";
   if (def.geomType === "point") return "dot";
   return "poly";
+}
+
+function buildEthnicityList(
+  defs: EthnicityLayer[],
+  map: MlMap,
+  active: Set<string>,
+): HTMLElement {
+  const list = document.createElement("div");
+  const note = document.createElement("p");
+  note.className = "layer-note";
+  note.textContent = "Circle area is proportional to population count per census tract.";
+  list.appendChild(note);
+  for (const d of defs) {
+    list.appendChild(buildEthnicityRow(d, map, active));
+  }
+  return list;
+}
+
+function buildEthnicityRow(
+  def: EthnicityLayer,
+  map: MlMap,
+  active: Set<string>,
+): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "layer-row";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = active.has(def.id);
+
+  const swatch = document.createElement("span");
+  swatch.className = "swatch dot";
+  swatch.style.background = def.color;
+  swatch.style.borderColor = def.color;
+
+  const label = document.createElement("span");
+  label.className = "layer-label";
+  label.textContent = def.label;
+
+  input.addEventListener("change", async () => {
+    if (input.checked) {
+      active.add(def.id);
+      await ensureEthnicityCentroidsSource(map);
+      setEthnicityLayerVisible(map, def, true);
+    } else {
+      active.delete(def.id);
+      setEthnicityLayerVisible(map, def, false);
+    }
+    notifyEthnicities(active);
+    notifyChange();
+  });
+
+  row.appendChild(input);
+  row.appendChild(swatch);
+  row.appendChild(label);
+  return row;
+}
+
+function notifyEthnicities(active: Set<string>): void {
+  const w = window as unknown as { __state?: { ethnicities?: Set<string> } };
+  if (w.__state) w.__state.ethnicities = active;
 }
 
 function buildDemographicsControls(

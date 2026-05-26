@@ -7,10 +7,11 @@ export type AppState = {
   districts: Set<string>;
   pois: Set<string>;
   metric?: string;
+  ethnicities: Set<string>;
 };
 
 export function emptyState(): AppState {
-  return { districts: new Set(), pois: new Set() };
+  return { districts: new Set(), pois: new Set(), ethnicities: new Set() };
 }
 
 export function parseHash(hash: string): AppState {
@@ -46,6 +47,9 @@ export function parseHash(hash: string): AppState {
   const m = params.get("m");
   if (m) state.metric = m;
 
+  const e = params.get("e");
+  if (e) for (const id of e.split(",").filter(Boolean)) state.ethnicities.add(id);
+
   return state;
 }
 
@@ -68,6 +72,9 @@ export function buildHash(state: AppState): string {
     params.set("p", [...state.pois].sort().join(","));
   }
   if (state.metric) params.set("m", state.metric);
+  if (state.ethnicities.size > 0) {
+    params.set("e", [...state.ethnicities].sort().join(","));
+  }
 
   return params.toString();
 }
