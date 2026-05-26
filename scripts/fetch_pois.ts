@@ -152,10 +152,35 @@ function buildPoint(lon: number, lat: number): Feature["geometry"] {
   return { type: "Point", coordinates: [lon, lat] };
 }
 
+const FETCH_TIMEOUT_MS = 60_000;
+const MAX_RETRIES = 3;
+
+async function fetchWithRetry(url: string): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      lastErr = err;
+      if (attempt < MAX_RETRIES) {
+        const delay = attempt * 2000;
+        process.stdout.write(`    retry ${attempt}/${MAX_RETRIES - 1} in ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 async function fetchDataset(ds: Dataset): Promise<{ id: string; count: number; bytes: number } | { id: string; error: string }> {
   const t0 = Date.now();
   try {
-    const res = await fetch(ds.url);
+    const res = await fetchWithRetry(ds.url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const raw = await res.json();
 
