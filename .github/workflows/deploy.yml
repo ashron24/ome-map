@@ -59,7 +59,8 @@ jobs:
         env:
           DC_API_KEY: ${{ secrets.DC_API_KEY }}
         run: |
-          npm run data:boundaries || echo "[deploy] boundaries skipped"
+          # Boundaries: prefer crosswalks repo release asset; fall back to direct Open Data fetch
+          npm run data:boundaries || npm run data:boundaries:direct || echo "[deploy] boundaries skipped"
           npm run data:pois || echo "[deploy] pois skipped"
           npm run data:census || echo "[deploy] census skipped"
 

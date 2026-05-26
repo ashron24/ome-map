@@ -21,7 +21,6 @@ export async function ensureDistrictSource(
   map.addSource(src, {
     type: "geojson",
     data: def.source,
-    generateId: true,
     promoteId: "nameCol",
   });
 

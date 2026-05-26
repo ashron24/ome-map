@@ -8,9 +8,11 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "data:boundaries": "tsx scripts/build_boundaries.ts",
+    "data:boundaries:direct": "tsx scripts/fetch_boundaries.ts",
     "data:pois": "tsx scripts/fetch_pois.ts",
     "data:census": "tsx scripts/fetch_census.ts",
-    "data:all": "npm run data:boundaries && npm run data:pois && npm run data:census"
+    "data:all": "npm run data:boundaries && npm run data:pois && npm run data:census",
+    "data:all:direct": "npm run data:boundaries:direct && npm run data:pois && npm run data:census"
   },
   "dependencies": {
     "maplibre-gl": "^4.7.1"
