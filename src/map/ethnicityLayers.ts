@@ -36,17 +36,15 @@ export const ETHNICITY_LAYERS: EthnicityLayer[] = [
 ];
 
 let popup: Popup | null = null;
-let sourceLoaded = false;
 
 function layerId(ethId: string): string {
   return `ethnicity-${ethId}`;
 }
 
 export async function ensureEthnicityCentroidsSource(map: MlMap): Promise<void> {
-  if (sourceLoaded) return;
-  sourceLoaded = true;
+  if (map.getSource(SOURCE_ID)) return;
 
-  if (!map.getSource(SOURCE_ID)) {
+  {
     map.addSource(SOURCE_ID, {
       type: "geojson",
       data: DATA_URL,

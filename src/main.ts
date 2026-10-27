@@ -5,7 +5,7 @@ import { Map as MlMap, NavigationControl, ScaleControl } from "maplibre-gl";
 import {
   BASEMAPS,
   DEFAULT_BASEMAP,
-  makeInitialStyle,
+  loadBasemapStyle,
 } from "./map/basemaps.ts";
 import type { BasemapId } from "./map/basemaps.ts";
 import { DISTRICTS } from "./map/districts.ts";
@@ -33,19 +33,20 @@ import {
   emptyState,
 } from "./state/urlState.ts";
 import type { AppState } from "./state/urlState.ts";
+import { STATION_ICON, stationIcon } from "./map/basemap-style.ts";
 
 const NYC_CENTER: [number, number] = [-73.9796, 40.7033];
-const BASEMAP_LAYER_ID = "basemap";
-const BASEMAP_SOURCE_ID = "basemap";
 
 const initialState = parseHash(window.location.hash);
-const initialBasemap =
+const initialBasemapDef =
   BASEMAPS.find((b) => b.id === initialState.basemap) ??
   BASEMAPS.find((b) => b.id === DEFAULT_BASEMAP)!;
 
+const initialStyle = await loadBasemapStyle(initialBasemapDef);
+
 const map = new MlMap({
   container: "map",
-  style: makeInitialStyle(initialBasemap),
+  style: initialStyle,
   center: initialState.center ?? NYC_CENTER,
   zoom: initialState.zoom ?? 10.5,
   minZoom: 9,
@@ -55,9 +56,16 @@ const map = new MlMap({
 map.addControl(new NavigationControl({ visualizePitch: false }), "top-right");
 map.addControl(new ScaleControl({ unit: "imperial" }), "bottom-left");
 
+// Register the subway station icon whenever the style (re)loads.
+map.on("style.load", () => {
+  if (!map.hasImage(STATION_ICON)) {
+    map.addImage(STATION_ICON, stationIcon(), { pixelRatio: 2 });
+  }
+});
+
 const state: AppState = {
   ...emptyState(),
-  basemap: initialBasemap.id,
+  basemap: initialBasemapDef.id,
   ethnicities: new Set(initialState.ethnicities),
 };
 
@@ -78,32 +86,50 @@ const persist = debounce(() => writeHash(snapshotState()), 250);
 
 map.on("moveend", persist);
 
-function setBasemap(id: BasemapId) {
+// Re-add all active overlay layers after a style swap.
+async function restoreOverlays() {
+  for (const id of state.districts) {
+    const def = DISTRICTS.find((d) => d.id === id);
+    if (!def) continue;
+    await ensureDistrictSource(map, def);
+    setDistrictVisible(map, def, true);
+  }
+  for (const id of state.pois) {
+    const def = POIS.find((p) => p.id === id);
+    if (!def) continue;
+    await ensurePOISource(map, def);
+    setPOIVisible(map, def, true);
+  }
+  if (state.metric) {
+    const m = METRICS.find((x) => x.id === state.metric);
+    if (m) {
+      await ensureDemographicsSource(map);
+      setDemographicMetric(map, m);
+    }
+  }
+  if (state.ethnicities.size > 0) {
+    await ensureEthnicityCentroidsSource(map);
+    for (const id of state.ethnicities) {
+      const def = ETHNICITY_LAYERS.find((l) => l.id === id);
+      if (!def) continue;
+      setEthnicityLayerVisible(map, def, true);
+    }
+  }
+}
+
+async function setBasemap(id: BasemapId) {
   const def = BASEMAPS.find((b) => b.id === id);
   if (!def) return;
   state.basemap = id;
 
-  if (map.getLayer(BASEMAP_LAYER_ID)) map.removeLayer(BASEMAP_LAYER_ID);
-  if (map.getSource(BASEMAP_SOURCE_ID)) map.removeSource(BASEMAP_SOURCE_ID);
+  const newStyle = await loadBasemapStyle(def);
+  map.setStyle(newStyle);
 
-  map.addSource(BASEMAP_SOURCE_ID, {
-    type: "raster",
-    tiles: def.tiles,
-    tileSize: def.tileSize,
-    attribution: def.attribution,
-    maxzoom: def.maxzoom,
+  // Wait for the new style to be fully applied before restoring overlays.
+  map.once("style.load", () => {
+    void restoreOverlays();
+    persist();
   });
-
-  const firstOther = map
-    .getStyle()
-    .layers.find((l) => l.id !== BASEMAP_LAYER_ID)?.id;
-
-  map.addLayer(
-    { id: BASEMAP_LAYER_ID, type: "raster", source: BASEMAP_SOURCE_ID },
-    firstOther,
-  );
-
-  persist();
 }
 
 function mountPanel() {
@@ -111,7 +137,7 @@ function mountPanel() {
   if (!panel) return;
   mountLayerPanel(panel, {
     map,
-    onBasemapChange: setBasemap,
+    onBasemapChange: (id) => void setBasemap(id),
     initialBasemap: state.basemap ?? DEFAULT_BASEMAP,
     activeDistricts: state.districts,
     activePOIs: state.pois,
@@ -166,7 +192,6 @@ function setupPanelToggle() {
   if (!toggle || !panel) return;
 
   const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
-  // Start collapsed on mobile, open on desktop
   if (isMobile()) panel.classList.add("panel-collapsed");
 
   toggle.addEventListener("click", () => {
@@ -176,7 +201,9 @@ function setupPanelToggle() {
 
 mountPanel();
 setupPanelToggle();
-void applyInitialLayers();
+
+// applyInitialLayers needs the style to be ready first.
+map.once("style.load", () => void applyInitialLayers());
 
 (window as unknown as { __map: MlMap; __state: AppState }).__map = map;
 (window as unknown as { __map: MlMap; __state: AppState }).__state = state;
