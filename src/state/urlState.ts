@@ -62,7 +62,7 @@ export function buildHash(state: AppState): string {
       "c",
       `${state.center[0].toFixed(4)},${state.center[1].toFixed(4)}`,
     );
-  if (state.basemap && state.basemap !== "nyc") {
+  if (state.basemap && state.basemap !== "openfreemap") {
     params.set("b", state.basemap);
   }
   if (state.districts.size > 0) {

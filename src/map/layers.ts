@@ -65,7 +65,7 @@ export async function ensureDistrictSource(
       "text-field": def.labelPrefix
         ? ["concat", def.labelPrefix, ["coalesce", ["get", "nameCol"], ""]]
         : ["coalesce", ["get", "nameCol"], ""],
-      "text-font": ["Noto Sans Regular"],
+      "text-font": ["Noto Sans Bold"],
       "text-size": [
         "interpolate",
         ["linear"],
@@ -82,7 +82,7 @@ export async function ensureDistrictSource(
       visibility: "none",
     },
     paint: {
-      "text-color": def.color,
+      "text-color": def.labelColor ?? def.color,
       "text-halo-color": "#ffffff",
       "text-halo-width": 1.5,
       "text-halo-blur": 0.5,

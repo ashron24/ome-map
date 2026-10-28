@@ -84,7 +84,7 @@ export const BASEMAPS: BasemapDef[] = [
   },
 ];
 
-export const DEFAULT_BASEMAP: BasemapId = "nyc";
+export const DEFAULT_BASEMAP: BasemapId = "openfreemap";
 
 // ── style builders ────────────────────────────────────────────────────────────
 

@@ -13,7 +13,10 @@ export type POIId =
   | "bike-routes"
   | "bus-shelters"
   | "linknyc"
-  | "restrooms";
+  | "restrooms"
+  | "subway-lines"
+  | "subway-stations"
+  | "bus-routes";
 
 export type POIGeomType = "point" | "polygon" | "line";
 
@@ -128,6 +131,47 @@ export const POIS: POIDef[] = [
       { key: "fromstreet", label: "From" },
       { key: "tostreet", label: "To" },
       { key: "facilitycl", label: "Class" },
+    ],
+    attribution: NYC_OPEN_DATA,
+  },
+  {
+    id: "subway-lines",
+    label: "Subway Lines",
+    group: "facilities",
+    source: dataUrl("data/pois/subway-lines.geojson"),
+    geomType: "line",
+    color: "#0039A6",
+    popupFields: [
+      { key: "name", label: "Line" },
+    ],
+    attribution: NYC_OPEN_DATA,
+  },
+  {
+    id: "subway-stations",
+    label: "Subway Stations",
+    group: "facilities",
+    source: dataUrl("data/pois/subway-stations.geojson"),
+    geomType: "point",
+    color: "#0039A6",
+    minZoom: 11,
+    popupFields: [
+      { key: "name", label: "Station" },
+      { key: "line", label: "Lines" },
+      { key: "notes", label: "Notes" },
+    ],
+    attribution: NYC_OPEN_DATA,
+  },
+  {
+    id: "bus-routes",
+    label: "Bus Routes",
+    group: "facilities",
+    source: dataUrl("data/pois/bus-routes.geojson"),
+    geomType: "line",
+    color: "#BF3030",
+    minZoom: 13,
+    popupFields: [
+      { key: "name", label: "Route" },
+      { key: "fullname", label: "Name" },
     ],
     attribution: NYC_OPEN_DATA,
   },
