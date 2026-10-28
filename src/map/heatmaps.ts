@@ -45,34 +45,38 @@ export async function ensureHeatmapSource(map: MlMap, def: HeatmapDef): Promise<
       type: "heatmap",
       source: src,
       paint: {
-        // Emergency complaints weighted 3×, non-emergency 0.5×
+        // Emergency complaints weighted 2×, non-emergency 0.5×
         "heatmap-weight": [
           "match", ["get", "urgency"],
-          "EMERGENCY", 3.0,
+          "EMERGENCY", 2.0,
           "NON EMERGENCY", 0.5,
           0.5,
         ] as unknown as number,
+        // Low intensity keeps most of the map light; only genuine clusters reach full color
         "heatmap-intensity": [
           "interpolate", ["linear"], ["zoom"],
-          9, 0.6,
-          14, 2.5,
+          9, 0.2,
+          14, 0.8,
         ],
+        // Color ramp: transparent → pale yellow → orange → red
+        // Dark red reserved for density > 0.9 so it appears only at true hotspots
         "heatmap-color": [
           "interpolate", ["linear"], ["heatmap-density"],
-          0,   "rgba(0,0,0,0)",
-          0.15, "rgba(255,235,59,0.4)",
-          0.35, "rgba(255,152,0,0.65)",
-          0.6,  "rgba(244,67,54,0.85)",
-          0.85, "rgba(183,28,28,0.95)",
-          1.0,  "rgb(130,0,0)",
+          0,    "rgba(0,0,0,0)",
+          0.15, "rgba(255,237,160,0.35)",
+          0.35, "rgba(254,178,76,0.6)",
+          0.6,  "rgba(253,141,60,0.78)",
+          0.8,  "rgba(240,59,32,0.88)",
+          0.92, "rgba(189,0,38,0.94)",
+          1.0,  "rgba(128,0,38,0.97)",
         ],
         "heatmap-radius": [
           "interpolate", ["linear"], ["zoom"],
-          9,  6,
-          13, 16,
-          16, 28,
+          9,  5,
+          13, 12,
+          16, 22,
         ],
-        "heatmap-opacity": 0.82,
+        "heatmap-opacity": 0.85,
       },
       layout: { visibility: "none" },
     });
