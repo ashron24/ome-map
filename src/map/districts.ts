@@ -56,7 +56,6 @@ export const DISTRICTS: DistrictDef[] = [
     label: "Community Districts",
     color: "#000000",
     lineWidth: 3,
-    labelPrefix: "CD ",
     group: "core",
     source: dataUrl("data/boundaries/cd.geojson"),
     attribution: NYC_DCP_BBL,

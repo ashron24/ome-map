@@ -56,7 +56,10 @@ const BOUNDARIES: BoundaryDef[] = [
     nameField: (props) => {
       const raw = Number(props["BoroCD"]);
       if (!Number.isFinite(raw)) return null;
-      return String(raw % 100);
+      const boro = Math.floor(raw / 100);
+      const num = raw % 100;
+      const abbr = ["", "MN", "BX", "BK", "QN", "SI"][boro] ?? "";
+      return abbr ? `${abbr} ${num}` : String(num);
     },
   },
   {

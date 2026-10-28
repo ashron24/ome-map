@@ -117,20 +117,12 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
     }),
   );
 
-  root.appendChild(
-    buildGroup({
-      title: "Demographics (ACS)",
-      collapsed: !deps.initialMetric,
-      body: buildDemographicsControls(deps.map, deps.initialMetric),
-    }),
-  );
-
   const hasInitialEthnicity = (deps.initialEthnicities?.size ?? 0) > 0;
   root.appendChild(
     buildGroup({
-      title: "Ethnicity (ACS)",
-      collapsed: !hasInitialEthnicity,
-      body: buildEthnicitySection(deps.map, activeEthnicities),
+      title: "Demographics",
+      collapsed: !deps.initialMetric && !hasInitialEthnicity,
+      body: buildDemographicsBody(deps.map, deps.initialMetric, activeEthnicities),
     }),
   );
 }
@@ -420,6 +412,21 @@ function buildEthnicityRow(
 function notifyEthnicities(active: Set<string>): void {
   const w = window as unknown as { __state?: { ethnicities?: Set<string> } };
   if (w.__state) w.__state.ethnicities = active;
+}
+
+function buildDemographicsBody(
+  map: MlMap,
+  initialMetric: string | undefined,
+  activeEthnicities: Set<string>,
+): HTMLElement {
+  const container = document.createElement("div");
+  container.appendChild(buildDemographicsControls(map, initialMetric));
+  const divider = document.createElement("div");
+  divider.className = "ethnicity-heading";
+  divider.textContent = "Ethnicity";
+  container.appendChild(divider);
+  container.appendChild(buildEthnicitySection(map, activeEthnicities));
+  return container;
 }
 
 function buildDemographicsControls(
