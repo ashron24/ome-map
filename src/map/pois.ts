@@ -398,21 +398,21 @@ export async function ensurePOISource(
       type: "circle",
       source: src,
       paint: {
-        "circle-color": def.hollow ? "rgba(0,0,0,0)" : def.color,
-        "circle-radius": [
-          "interpolate", ["linear"], ["zoom"],
-          10, 3,
-          14, 6,
-          16, 9,
-        ],
-        "circle-opacity": def.hollow ? 0 : 0.9,
-        "circle-stroke-width": def.hollow ? 2 : 1,
+        "circle-color": def.hollow ? "#888888" : def.color,
+        "circle-radius": def.hollow
+          ? ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 3.5, 16, 5]
+          : ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 6, 16, 9],
+        "circle-opacity": def.hollow ? 0.5 : 0.9,
+        "circle-stroke-width": def.hollow ? 1.5 : 1,
         "circle-stroke-color": def.hollow ? def.color : "#ffffff",
         "circle-stroke-opacity": 0.9,
       },
       layout: { visibility: "none" },
       ...(def.minZoom ? { minzoom: def.minZoom } : {}),
     });
+    if (def.hollow) {
+      try { map.moveLayer(pointLayer(def.id)); } catch (_) {}
+    }
   }
 
   wirePOIInteractivity(map, def);

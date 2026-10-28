@@ -21,6 +21,7 @@ export type DistrictDef = {
   label: string;
   color: string;
   labelColor?: string;
+  labelMaxWidth?: number;
   lineWidth: number;
   dash?: [number, number];
   labelPrefix?: string;
@@ -42,8 +43,9 @@ export const DISTRICTS: DistrictDef[] = [
   {
     id: "nta",
     label: "Neighborhoods (NTAs)",
-    color: "#928d8d",
+    color: "#b8b3b3",
     labelColor: "#383838",
+    labelMaxWidth: 7,
     lineWidth: 1.5,
     group: "core",
     source: dataUrl("data/boundaries/nta.geojson"),

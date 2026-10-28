@@ -79,6 +79,7 @@ export async function ensureDistrictSource(
       ],
       "text-allow-overlap": false,
       "text-padding": 4,
+      "text-max-width": def.labelMaxWidth ?? 10,
       visibility: "none",
     },
     paint: {
