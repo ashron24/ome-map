@@ -143,8 +143,9 @@ export const POIS: POIDef[] = [
     color: "#0039A6",
     popupFields: [
       { key: "name", label: "Line" },
+      { key: "route", label: "Route" },
     ],
-    attribution: NYC_OPEN_DATA,
+    attribution: { name: "MTA / NY Open Data", href: "https://data.ny.gov/Transportation/MTA-Subway-Service-Lines/s692-irgq" },
   },
   {
     id: "subway-stations",
@@ -156,10 +157,11 @@ export const POIS: POIDef[] = [
     minZoom: 11,
     popupFields: [
       { key: "name", label: "Station" },
-      { key: "line", label: "Lines" },
-      { key: "notes", label: "Notes" },
+      { key: "daytime_routes", label: "Routes" },
+      { key: "line", label: "Line" },
+      { key: "structure", label: "Structure" },
     ],
-    attribution: NYC_OPEN_DATA,
+    attribution: { name: "MTA / NY Open Data", href: "https://data.ny.gov/Transportation/MTA-Subway-Stations/39hk-dx4f" },
   },
   {
     id: "bus-routes",
@@ -172,8 +174,9 @@ export const POIS: POIDef[] = [
     popupFields: [
       { key: "name", label: "Route" },
       { key: "fullname", label: "Name" },
+      { key: "type", label: "Type" },
     ],
-    attribution: NYC_OPEN_DATA,
+    attribution: { name: "MTA / NY Open Data", href: "https://data.ny.gov/Transportation/MTA-Bus-Routes/bzwk-3hb4" },
   },
   {
     id: "bus-shelters",
