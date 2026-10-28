@@ -15,12 +15,21 @@ type Dataset = {
 // The violations dataset (csn4-vhvf) has no geocoords; this complaints dataset
 // is the upstream source — every violation originates from a complaint — and
 // does have latitude/longitude. We fetch open complaints only (~60k records).
+//
+// DOB Safety Violations (855j-jady). Active violations only (~685k total);
+// we take the 150k most recent to keep the file size manageable.
+// DEP ECB Violations (skr7-cxt3) has no coordinate data — skipped.
 const DATASETS: Dataset[] = [
   {
     id: "hpd-violations",
     label: "HPD Open Housing Complaints",
     url: `https://data.cityofnewyork.us/resource/ygpa-z7cr.json?$limit=100000&$select=latitude,longitude,type,major_category&$where=complaint_status='OPEN'`,
     renameProps: { type: "urgency", major_category: "category" },
+  },
+  {
+    id: "dob-violations",
+    label: "DOB Active Safety Violations",
+    url: `https://data.cityofnewyork.us/resource/855j-jady.json?$limit=150000&$select=latitude,longitude,device_type,violation_type&$where=violation_status='Active' AND latitude IS NOT NULL&$order=violation_issue_date DESC`,
   },
 ];
 

@@ -123,7 +123,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   root.appendChild(
     buildGroup({
-      title: "City Agency Data",
+      title: "Agency Open Violations",
       collapsed: true,
       body: buildHeatmapList(HEATMAPS, deps.map, activeHeatmaps),
     }),

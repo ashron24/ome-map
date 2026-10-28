@@ -2,7 +2,7 @@ import type { Map as MlMap } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import { dataUrl } from "../util/url.ts";
 
-export type HeatmapId = "hpd-violations";
+export type HeatmapId = "hpd-violations" | "dob-violations";
 
 export type HeatmapDef = {
   id: HeatmapId;
@@ -10,18 +10,37 @@ export type HeatmapDef = {
   description: string;
   source: string;
   attribution: { name: string; href: string };
+  popupFields?: Array<{ key: string; label: string }>;
 };
 
 export const HEATMAPS: HeatmapDef[] = [
   {
     id: "hpd-violations",
-    label: "HPD Open Complaints (Heatmap)",
+    label: "HPD Open Complaints",
     description: "Active housing maintenance complaints — emergency complaints weighted 3×. Every complaint triggers an HPD inspection and potential violation.",
     source: dataUrl("data/heatmaps/hpd-violations.geojson"),
     attribution: {
       name: "NYC HPD Open Data",
       href: "https://data.cityofnewyork.us/Housing-Development/Housing-Maintenance-Code-Complaints-and-Problems/ygpa-z7cr",
     },
+    popupFields: [
+      { key: "urgency", label: "Type" },
+      { key: "category", label: "Category" },
+    ],
+  },
+  {
+    id: "dob-violations",
+    label: "DOB Active Safety Violations",
+    description: "Active NYC Buildings Dept safety violations (150k most recent). Covers elevators, boilers, facades, and other building systems.",
+    source: dataUrl("data/heatmaps/dob-violations.geojson"),
+    attribution: {
+      name: "NYC DOB Open Data",
+      href: "https://data.cityofnewyork.us/Housing-Development/DOB-Safety-Violations/855j-jady",
+    },
+    popupFields: [
+      { key: "device_type", label: "Category" },
+      { key: "violation_type", label: "Code" },
+    ],
   },
 ];
 
@@ -92,14 +111,15 @@ function wireHeatmapPopup(map: MlMap, def: HeatmapDef): void {
     if (!features.length) return;
 
     const props = (features[0].properties ?? {}) as Record<string, unknown>;
-    const urgency = String(props["urgency"] ?? "");
-    const category = String(props["category"] ?? "");
     const attribution = `<a class="attribution-link" href="${def.attribution.href}" target="_blank" rel="noopener">${def.attribution.name}</a>`;
 
-    const rows = [
-      urgency ? `<dt>Type</dt><dd>${urgency}</dd>` : "",
-      category ? `<dt>Category</dt><dd>${category}</dd>` : "",
-    ].filter(Boolean).join("");
+    const rows = (def.popupFields ?? [])
+      .map(({ key, label }) => {
+        const val = String(props[key] ?? "");
+        return val ? `<dt>${label}</dt><dd>${val}</dd>` : "";
+      })
+      .filter(Boolean)
+      .join("");
 
     popup?.remove();
     popup = new Popup({ closeOnClick: true, maxWidth: "280px" })
