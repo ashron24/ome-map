@@ -66,6 +66,7 @@ jobs:
           # Boundaries: prefer crosswalks repo release asset; fall back to direct Open Data fetch
           npm run data:boundaries || npm run data:boundaries:direct || echo "[deploy] boundaries skipped"
           npm run data:pois || echo "[deploy] pois skipped"
+          npm run data:heatmaps || echo "[deploy] heatmaps skipped"
           npm run data:census || echo "[deploy] census skipped"
 
       - name: Build site

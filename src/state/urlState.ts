@@ -6,12 +6,13 @@ export type AppState = {
   basemap?: BasemapId;
   districts: Set<string>;
   pois: Set<string>;
+  heatmaps: Set<string>;
   metric?: string;
   ethnicities: Set<string>;
 };
 
 export function emptyState(): AppState {
-  return { districts: new Set(), pois: new Set(), ethnicities: new Set() };
+  return { districts: new Set(), pois: new Set(), heatmaps: new Set(), ethnicities: new Set() };
 }
 
 export function parseHash(hash: string): AppState {
@@ -44,6 +45,9 @@ export function parseHash(hash: string): AppState {
   const p = params.get("p");
   if (p) for (const id of p.split(",").filter(Boolean)) state.pois.add(id);
 
+  const h = params.get("h");
+  if (h) for (const id of h.split(",").filter(Boolean)) state.heatmaps.add(id);
+
   const m = params.get("m");
   if (m) state.metric = m;
 
@@ -70,6 +74,9 @@ export function buildHash(state: AppState): string {
   }
   if (state.pois.size > 0) {
     params.set("p", [...state.pois].sort().join(","));
+  }
+  if (state.heatmaps.size > 0) {
+    params.set("h", [...state.heatmaps].sort().join(","));
   }
   if (state.metric) params.set("m", state.metric);
   if (state.ethnicities.size > 0) {

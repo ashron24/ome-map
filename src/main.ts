@@ -25,6 +25,11 @@ import {
   ensureEthnicityCentroidsSource,
   setEthnicityLayerVisible,
 } from "./map/ethnicityLayers.ts";
+import {
+  HEATMAPS,
+  ensureHeatmapSource,
+  setHeatmapVisible,
+} from "./map/heatmaps.ts";
 import { mountLayerPanel } from "./ui/layerPanel.ts";
 import {
   debounce,
@@ -67,6 +72,7 @@ const state: AppState = {
   ...emptyState(),
   basemap: initialBasemapDef.id,
   ethnicities: new Set(initialState.ethnicities),
+  heatmaps: new Set(initialState.heatmaps),
 };
 
 function snapshotState(): AppState {
@@ -77,6 +83,7 @@ function snapshotState(): AppState {
     basemap: state.basemap,
     districts: state.districts,
     pois: state.pois,
+    heatmaps: state.heatmaps,
     metric: state.metric,
     ethnicities: state.ethnicities,
   };
@@ -115,6 +122,12 @@ async function restoreOverlays() {
       setEthnicityLayerVisible(map, def, true);
     }
   }
+  for (const id of state.heatmaps) {
+    const def = HEATMAPS.find((h) => h.id === id);
+    if (!def) continue;
+    await ensureHeatmapSource(map, def);
+    setHeatmapVisible(map, def, true);
+  }
 }
 
 async function setBasemap(id: BasemapId) {
@@ -141,6 +154,7 @@ function mountPanel() {
     initialBasemap: state.basemap ?? DEFAULT_BASEMAP,
     activeDistricts: state.districts,
     activePOIs: state.pois,
+    activeHeatmaps: state.heatmaps,
     activeEthnicities: state.ethnicities,
     onChange: persist,
     initialMetric: initialState.metric,
@@ -183,6 +197,14 @@ async function applyInitialLayers() {
       state.ethnicities.add(id);
       setEthnicityLayerVisible(map, def, true);
     }
+  }
+  // Heatmap layers
+  for (const id of initialState.heatmaps) {
+    const def = HEATMAPS.find((h) => h.id === id);
+    if (!def) continue;
+    state.heatmaps.add(id);
+    await ensureHeatmapSource(map, def);
+    setHeatmapVisible(map, def, true);
   }
 }
 

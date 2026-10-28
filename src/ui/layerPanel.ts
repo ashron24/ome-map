@@ -10,6 +10,9 @@ import {
 import { POIS } from "../map/pois.ts";
 import type { POIDef } from "../map/pois.ts";
 import { ensurePOISource, setPOIVisible } from "../map/pois.ts";
+import { HEATMAPS } from "../map/heatmaps.ts";
+import type { HeatmapDef } from "../map/heatmaps.ts";
+import { ensureHeatmapSource, setHeatmapVisible } from "../map/heatmaps.ts";
 import { METRICS } from "../map/demographics.ts";
 import type { DemographicMetric } from "../map/demographics.ts";
 import {
@@ -29,6 +32,7 @@ type PanelDeps = {
   initialBasemap?: BasemapId;
   activeDistricts: Set<string>;
   activePOIs: Set<string>;
+  activeHeatmaps: Set<string>;
   activeEthnicities: Set<string>;
   onChange?: () => void;
   initialMetric?: string;
@@ -45,6 +49,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   const initialBasemap = deps.initialBasemap ?? DEFAULT_BASEMAP;
   const activeDistricts = deps.activeDistricts;
   const activePOIs = deps.activePOIs;
+  const activeHeatmaps = deps.activeHeatmaps;
   const activeEthnicities = deps.activeEthnicities;
   onChangeCallback = deps.onChange;
 
@@ -113,6 +118,14 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
         deps.map,
         activePOIs,
       ),
+    }),
+  );
+
+  root.appendChild(
+    buildGroup({
+      title: "City Agency Data",
+      collapsed: true,
+      body: buildHeatmapList(HEATMAPS, deps.map, activeHeatmaps),
     }),
   );
 
@@ -296,6 +309,56 @@ function swatchClass(def: POIDef): string {
   if (def.geomType === "line") return "line";
   if (def.geomType === "point") return "dot";
   return "poly";
+}
+
+function buildHeatmapList(defs: HeatmapDef[], map: MlMap, active: Set<string>): HTMLElement {
+  const container = document.createElement("div");
+  for (const def of defs) {
+    const row = document.createElement("label");
+    row.className = "layer-row";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = active.has(def.id);
+
+    const swatch = document.createElement("span");
+    swatch.className = "swatch ramp";
+    swatch.style.background =
+      "linear-gradient(to right, rgba(255,235,59,0.4), rgba(255,152,0,0.65), rgba(244,67,54,0.85), rgb(130,0,0))";
+
+    const labelWrap = document.createElement("span");
+    labelWrap.className = "layer-label";
+    labelWrap.textContent = def.label;
+
+    input.addEventListener("change", async () => {
+      if (input.checked) {
+        active.add(def.id);
+        await ensureHeatmapSource(map, def);
+        setHeatmapVisible(map, def, true);
+      } else {
+        active.delete(def.id);
+        setHeatmapVisible(map, def, false);
+      }
+      notifyHeatmaps(active);
+      notifyChange();
+    });
+
+    const note = document.createElement("p");
+    note.className = "layer-note";
+    note.textContent = def.description;
+
+    row.appendChild(input);
+    row.appendChild(swatch);
+    row.appendChild(labelWrap);
+    container.appendChild(row);
+    container.appendChild(note);
+  }
+  return container;
+}
+
+function notifyHeatmaps(active: Set<string>): void {
+  const w = window as unknown as { __state?: { heatmaps?: Set<string> } };
+  if (w.__state) w.__state.heatmaps = active;
 }
 
 function buildEthnicitySection(map: MlMap, active: Set<string>): HTMLElement {
