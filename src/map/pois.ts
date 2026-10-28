@@ -16,7 +16,8 @@ export type POIId =
   | "restrooms"
   | "subway-lines"
   | "subway-stations"
-  | "bus-routes";
+  | "bus-routes"
+  | "dycd-sites";
 
 export type POIGeomType = "point" | "polygon" | "line";
 
@@ -29,6 +30,8 @@ export type POIDef = {
   source: string;
   geomType: POIGeomType;
   color: string;
+  colorExpr?: unknown;
+  legend?: { label: string; color: string }[];
   hollow?: boolean;
   minZoom?: number;
   popupFields: { key: string; label: string }[];
@@ -43,6 +46,32 @@ const NYC_OPEN_DATA: Attribution = {
   name: "NYC Open Data",
   href: "https://opendata.cityofnewyork.us/",
 };
+
+// DYCD program area color map (ordered by site count desc)
+const DYCD_AREA_COLORS: [string, string][] = [
+  ["Discretionary", "#757575"],
+  ["Compass", "#1565C0"],
+  ["SYEP", "#F57C00"],
+  ["Literacy and Immigrant Services", "#7B1FA2"],
+  ["CSBG", "#00695C"],
+  ["Cornerstone", "#2E7D32"],
+  ["Beacon", "#F9A825"],
+  ["Office of Neighborhood Safety", "#C62828"],
+  ["RHY", "#AD1457"],
+  ["WIOA", "#4527A0"],
+  ["Strategic Partnerships", "#0277BD"],
+  ["Advance and Earn", "#558B2F"],
+  ["CSBG-HRA", "#00838F"],
+  ["CRED", "#BF360C"],
+  ["Unity Works", "#283593"],
+];
+
+const DYCD_COLOR_EXPR = [
+  "match",
+  ["get", "program_area"],
+  ...DYCD_AREA_COLORS.flat(),
+  "#888888",
+];
 
 export const POIS: POIDef[] = [
   {
@@ -261,6 +290,29 @@ export const POIS: POIDef[] = [
     ],
     attribution: NYC_OPEN_DATA,
   },
+  {
+    id: "dycd-sites",
+    label: "DYCD Program Sites",
+    group: "services",
+    source: dataUrl("data/pois/dycd-sites.geojson"),
+    geomType: "point",
+    color: "#888888",
+    colorExpr: DYCD_COLOR_EXPR,
+    legend: DYCD_AREA_COLORS.map(([label, color]) => ({ label, color })),
+    popupFields: [
+      { key: "name", label: "Site" },
+      { key: "program_area", label: "Program Area" },
+      { key: "program_type", label: "Type" },
+      { key: "provider", label: "Provider" },
+      { key: "address", label: "Address" },
+      { key: "borough", label: "Borough" },
+      { key: "age_range", label: "Ages" },
+    ],
+    attribution: {
+      name: "NYC DYCD / NYC Open Data",
+      href: "https://data.cityofnewyork.us/Social-Services/DYCD-Program-Sites/ebkm-iyma",
+    },
+  },
 ];
 
 const poiSourceId = (id: string) => `poi-${id}`;
@@ -398,7 +450,9 @@ export async function ensurePOISource(
       type: "circle",
       source: src,
       paint: {
-        "circle-color": def.hollow ? "#888888" : def.color,
+        "circle-color": def.colorExpr !== undefined
+          ? def.colorExpr as unknown as string
+          : def.hollow ? "#888888" : def.color,
         "circle-radius": def.hollow
           ? ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 3.5, 16, 5]
           : ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 6, 16, 9],

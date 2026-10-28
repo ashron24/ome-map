@@ -257,15 +257,41 @@ function buildPOIRow(
   input.type = "checkbox";
   input.checked = active.has(def.id);
 
+  const label = document.createElement("span");
+  label.className = "layer-label";
+  label.textContent = def.label;
+
+  if (def.legend) {
+    const legend = buildPOILegend(def.legend);
+    legend.style.display = input.checked ? "block" : "none";
+
+    input.addEventListener("change", async () => {
+      if (input.checked) {
+        active.add(def.id);
+        await ensurePOISource(map, def);
+        setPOIVisible(map, def, true);
+        legend.style.display = "block";
+      } else {
+        active.delete(def.id);
+        setPOIVisible(map, def, false);
+        legend.style.display = "none";
+      }
+      notifyChange();
+    });
+
+    row.appendChild(input);
+    row.appendChild(label);
+    const wrapper = document.createElement("div");
+    wrapper.appendChild(row);
+    wrapper.appendChild(legend);
+    return wrapper;
+  }
+
   const swatch = document.createElement("span");
   swatch.className = "swatch " + swatchClass(def);
   swatch.style.background = def.geomType === "line" ? "transparent" : def.color;
   swatch.style.color = def.color;
   swatch.style.borderColor = def.color;
-
-  const label = document.createElement("span");
-  label.className = "layer-label";
-  label.textContent = def.label;
 
   input.addEventListener("change", async () => {
     if (input.checked) {
@@ -283,6 +309,26 @@ function buildPOIRow(
   row.appendChild(swatch);
   row.appendChild(label);
   return row;
+}
+
+function buildPOILegend(items: { label: string; color: string }[]): HTMLElement {
+  const container = document.createElement("div");
+  container.className = "poi-legend";
+  for (const item of items) {
+    const row = document.createElement("div");
+    row.className = "poi-legend-row";
+    const dot = document.createElement("span");
+    dot.className = "swatch dot";
+    dot.style.background = item.color;
+    dot.style.borderColor = item.color;
+    const lbl = document.createElement("span");
+    lbl.className = "poi-legend-label";
+    lbl.textContent = item.label;
+    row.appendChild(dot);
+    row.appendChild(lbl);
+    container.appendChild(row);
+  }
+  return container;
 }
 
 function swatchClass(def: POIDef): string {
