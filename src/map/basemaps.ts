@@ -66,16 +66,58 @@ export const BASEMAPS: BasemapDef[] = [
       if (!resp.ok) throw new Error(`OpenFreeMap style ${resp.status}`);
       const style = await resp.json() as StyleSpecification;
 
-      // Strip all text/icon label layers from the base tiles
-      style.layers = style.layers.filter((l) => l.type !== "symbol");
+      // Keep road and water name labels from vector tiles; drop all place/poi labels
+      const KEEP_SOURCE_LAYERS = new Set(["transportation_name", "water_name"]);
+      style.layers = style.layers.filter((l) => {
+        if (l.type !== "symbol") return true;
+        const sl = ("source-layer" in l ? l["source-layer"] : undefined) as string | undefined;
+        return !sl || KEEP_SOURCE_LAYERS.has(sl);
+      });
 
-      // Add NYC neighborhood labels from our NTA GeoJSON
       const ntaUrl = dataUrl("data/boundaries/nta.geojson");
-      (style.sources as Record<string, unknown>)["_nta_bg"] = {
+      const sources = style.sources as Record<string, unknown>;
+      sources["_nta_bg"] = { type: "geojson", data: ntaUrl };
+      sources["_boroughs_bg"] = {
         type: "geojson",
-        data: ntaUrl,
+        data: {
+          type: "FeatureCollection",
+          features: [
+            { type: "Feature", properties: { name: "Manhattan" },    geometry: { type: "Point", coordinates: [-73.9712, 40.7831] } },
+            { type: "Feature", properties: { name: "Brooklyn" },     geometry: { type: "Point", coordinates: [-73.9442, 40.6501] } },
+            { type: "Feature", properties: { name: "Queens" },       geometry: { type: "Point", coordinates: [-73.8370, 40.7282] } },
+            { type: "Feature", properties: { name: "The Bronx" },    geometry: { type: "Point", coordinates: [-73.8648, 40.8448] } },
+            { type: "Feature", properties: { name: "Staten Island" }, geometry: { type: "Point", coordinates: [-74.1502, 40.5795] } },
+          ],
+        },
       };
-      style.layers.push({
+
+      const push = (layer: object) =>
+        style.layers.push(layer as StyleSpecification["layers"][number]);
+
+      // Borough labels — large, uppercase, visible at lower zooms
+      push({
+        id: "_borough_labels",
+        type: "symbol",
+        source: "_boroughs_bg",
+        minzoom: 8,
+        maxzoom: 13,
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 8, 11, 12, 17],
+          "text-letter-spacing": 0.12,
+          "text-transform": "uppercase",
+          "text-allow-overlap": false,
+        },
+        paint: {
+          "text-color": "#555",
+          "text-halo-color": "rgba(255,255,255,0.9)",
+          "text-halo-width": 2,
+        },
+      });
+
+      // Neighborhood (NTA) labels — finer detail at higher zooms
+      push({
         id: "_nta_bg_labels",
         type: "symbol",
         source: "_nta_bg",
@@ -83,14 +125,8 @@ export const BASEMAPS: BasemapDef[] = [
         layout: {
           "text-field": ["coalesce", ["get", "nameCol"], ""],
           "text-font": ["Noto Sans Bold"],
-          "text-size": [
-            "interpolate", ["linear"], ["zoom"],
-            11, 10,
-            13, 12,
-            15, 15,
-          ],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 13, 12, 15, 15],
           "text-allow-overlap": false,
-          "text-ignore-placement": false,
           "text-padding": 4,
           "text-max-width": 8,
         },
@@ -100,7 +136,7 @@ export const BASEMAPS: BasemapDef[] = [
           "text-halo-width": 1.5,
           "text-halo-blur": 0.5,
         },
-      } as unknown as StyleSpecification["layers"][number]);
+      });
 
       return style;
     },
