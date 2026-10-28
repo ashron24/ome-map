@@ -15,12 +15,12 @@ export type HeatmapDef = {
 export const HEATMAPS: HeatmapDef[] = [
   {
     id: "hpd-violations",
-    label: "HPD Violations (Heatmap)",
-    description: "Open housing violations weighted by severity class (A / B / C)",
+    label: "HPD Open Complaints (Heatmap)",
+    description: "Active housing maintenance complaints — emergency complaints weighted 3×. Every complaint triggers an HPD inspection and potential violation.",
     source: dataUrl("data/heatmaps/hpd-violations.geojson"),
     attribution: {
       name: "NYC HPD Open Data",
-      href: "https://data.cityofnewyork.us/Housing-Development/Open-HPD-Violations/csn4-vhvf",
+      href: "https://data.cityofnewyork.us/Housing-Development/Housing-Maintenance-Code-Complaints-and-Problems/ygpa-z7cr",
     },
   },
 ];
@@ -45,12 +45,11 @@ export async function ensureHeatmapSource(map: MlMap, def: HeatmapDef): Promise<
       type: "heatmap",
       source: src,
       paint: {
-        // Class C (immediately hazardous) = 3×, B = 1.5×, A / unknown = 0.5×
+        // Emergency complaints weighted 3×, non-emergency 0.5×
         "heatmap-weight": [
-          "match", ["get", "severity"],
-          "C", 3.0,
-          "B", 1.5,
-          "A", 0.5,
+          "match", ["get", "urgency"],
+          "EMERGENCY", 3.0,
+          "NON EMERGENCY", 0.5,
           0.5,
         ] as unknown as number,
         "heatmap-intensity": [
@@ -92,20 +91,21 @@ function wireHeatmapPopup(map: MlMap, def: HeatmapDef): void {
     if (!features.length) return;
 
     const props = (features[0].properties ?? {}) as Record<string, unknown>;
-    const severity = String(props["severity"] ?? "?");
-    const severityLabel: Record<string, string> = {
-      A: "Non-Hazardous",
-      B: "Hazardous",
-      C: "Immediately Hazardous",
-    };
+    const urgency = String(props["urgency"] ?? "");
+    const category = String(props["category"] ?? "");
     const attribution = `<a class="attribution-link" href="${def.attribution.href}" target="_blank" rel="noopener">${def.attribution.name}</a>`;
+
+    const rows = [
+      urgency ? `<dt>Type</dt><dd>${urgency}</dd>` : "",
+      category ? `<dt>Category</dt><dd>${category}</dd>` : "",
+    ].filter(Boolean).join("");
 
     popup?.remove();
     popup = new Popup({ closeOnClick: true, maxWidth: "280px" })
       .setLngLat(e.lngLat)
       .setHTML(
         `<div><strong>${def.label}</strong></div>` +
-          `<dl><dt>Class</dt><dd>${severity} — ${severityLabel[severity] ?? "Unknown"}</dd></dl>` +
+          `<dl>${rows}</dl>` +
           `<div style="margin-top:6px;font-size:11px;color:#888;">Source: ${attribution}</div>`,
       )
       .addTo(map);

@@ -345,7 +345,7 @@ function buildHeatmapList(defs: HeatmapDef[], map: MlMap, active: Set<string>): 
 
     const note = document.createElement("p");
     note.className = "layer-note";
-    note.textContent = def.description;
+    note.innerHTML = def.description;
 
     row.appendChild(input);
     row.appendChild(swatch);

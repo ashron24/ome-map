@@ -4,12 +4,23 @@ import { join } from "node:path";
 
 const TARGET = join(process.cwd(), "public/data/heatmaps");
 
-const DATASETS = [
+type Dataset = {
+  id: string;
+  label: string;
+  url: string;
+  renameProps?: Record<string, string>;
+};
+
+// HPD Housing Maintenance Code Complaints & Problems (ygpa-z7cr).
+// The violations dataset (csn4-vhvf) has no geocoords; this complaints dataset
+// is the upstream source — every violation originates from a complaint — and
+// does have latitude/longitude. We fetch open complaints only (~60k records).
+const DATASETS: Dataset[] = [
   {
     id: "hpd-violations",
-    label: "HPD Open Violations",
-    // class DESC puts C (immediately hazardous) first so they're kept if we hit the limit
-    url: "https://data.cityofnewyork.us/resource/csn4-vhvf.json?$limit=150000&$select=latitude,longitude,class&$where=latitude%20IS%20NOT%20NULL%20AND%20longitude%20IS%20NOT%20NULL&$order=class%20DESC",
+    label: "HPD Open Housing Complaints",
+    url: `https://data.cityofnewyork.us/resource/ygpa-z7cr.json?$limit=100000&$select=latitude,longitude,type,major_category&$where=complaint_status='OPEN'`,
+    renameProps: { type: "urgency", major_category: "category" },
   },
 ];
 
@@ -46,16 +57,22 @@ async function main() {
     const t0 = Date.now();
     try {
       const res = await fetchWithRetry(ds.url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text().then(t => t.slice(0, 200))}`);
       const rows = (await res.json()) as Array<Record<string, string>>;
 
       const features = rows.flatMap((row) => {
         const lat = Number(row["latitude"]);
         const lon = Number(row["longitude"]);
         if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat === 0 || lon === 0) return [];
+        const props: Record<string, string> = {};
+        for (const [k, v] of Object.entries(row)) {
+          if (k === "latitude" || k === "longitude") continue;
+          const outKey = ds.renameProps?.[k] ?? k;
+          props[outKey] = v;
+        }
         return [{
           type: "Feature" as const,
-          properties: { severity: row["class"] ?? "A" },
+          properties: props,
           geometry: { type: "Point" as const, coordinates: [lon, lat] },
         }];
       });
