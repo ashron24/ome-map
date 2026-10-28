@@ -20,6 +20,7 @@ type VectorBasemapDef = {
 export type BasemapId =
   | "nyc"
   | "openfreemap"
+  | "positron-nyc"
   | "osm"
   | "esri-imagery";
 
@@ -54,6 +55,54 @@ export const BASEMAPS: BasemapDef[] = [
       const resp = await fetch(OPENFREEMAP_STYLE);
       if (!resp.ok) throw new Error(`OpenFreeMap style ${resp.status}`);
       return resp.json() as Promise<StyleSpecification>;
+    },
+  },
+  {
+    id: "positron-nyc",
+    label: "Light (NYC Labels Only)",
+    kind: "vector",
+    load: async () => {
+      const resp = await fetch(OPENFREEMAP_STYLE);
+      if (!resp.ok) throw new Error(`OpenFreeMap style ${resp.status}`);
+      const style = await resp.json() as StyleSpecification;
+
+      // Strip all text/icon label layers from the base tiles
+      style.layers = style.layers.filter((l) => l.type !== "symbol");
+
+      // Add NYC neighborhood labels from our NTA GeoJSON
+      const ntaUrl = dataUrl("data/boundaries/nta.geojson");
+      (style.sources as Record<string, unknown>)["_nta_bg"] = {
+        type: "geojson",
+        data: ntaUrl,
+      };
+      style.layers.push({
+        id: "_nta_bg_labels",
+        type: "symbol",
+        source: "_nta_bg",
+        minzoom: 11,
+        layout: {
+          "text-field": ["coalesce", ["get", "nameCol"], ""],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": [
+            "interpolate", ["linear"], ["zoom"],
+            11, 10,
+            13, 12,
+            15, 15,
+          ],
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-padding": 4,
+          "text-max-width": 8,
+        },
+        paint: {
+          "text-color": "#555",
+          "text-halo-color": "rgba(255,255,255,0.9)",
+          "text-halo-width": 1.5,
+          "text-halo-blur": 0.5,
+        },
+      } as unknown as StyleSpecification["layers"][number]);
+
+      return style;
     },
   },
   {
