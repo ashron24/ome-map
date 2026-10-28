@@ -26,7 +26,6 @@ export type POIDef = {
   source: string;
   geomType: POIGeomType;
   color: string;
-  cluster?: boolean;
   minZoom?: number;
   popupFields: { key: string; label: string }[];
   attribution: Attribution;
@@ -49,7 +48,6 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/schools-public.geojson"),
     geomType: "point",
     color: "#1976D2",
-    cluster: true,
     popupFields: [
       { key: "name", label: "School" },
       { key: "addr", label: "Address" },
@@ -65,7 +63,6 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/libraries.geojson"),
     geomType: "point",
     color: "#F57C00",
-    cluster: false,
     popupFields: [
       { key: "name", label: "Library" },
       { key: "addr", label: "Address" },
@@ -80,7 +77,6 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/hospitals.geojson"),
     geomType: "point",
     color: "#D32F2F",
-    cluster: true,
     popupFields: [
       { key: "name", label: "Facility" },
       { key: "type", label: "Type" },
@@ -97,7 +93,6 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/cultural.geojson"),
     geomType: "point",
     color: "#7B1FA2",
-    cluster: true,
     popupFields: [
       { key: "name", label: "Name" },
       { key: "type", label: "Type" },
@@ -143,8 +138,7 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/bus-shelters.geojson"),
     geomType: "point",
     color: "#455A64",
-    cluster: true,
-    minZoom: 11,
+    minZoom: 13,
     popupFields: [
       { key: "street", label: "On" },
       { key: "cross_street", label: "Cross" },
@@ -160,7 +154,6 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/daycare-prek.geojson"),
     geomType: "point",
     color: "#FBC02D",
-    cluster: true,
     popupFields: [
       { key: "name", label: "Site" },
       { key: "type", label: "Type" },
@@ -192,8 +185,7 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/linknyc.geojson"),
     geomType: "point",
     color: "#00ACC1",
-    cluster: true,
-    minZoom: 11,
+    minZoom: 13,
     popupFields: [
       { key: "site_id", label: "Site ID" },
       { key: "addr", label: "Address" },
@@ -210,8 +202,7 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/restrooms.geojson"),
     geomType: "point",
     color: "#5D4037",
-    cluster: true,
-    minZoom: 11,
+    minZoom: 13,
     popupFields: [
       { key: "name", label: "Name" },
       { key: "type", label: "Type" },
@@ -228,8 +219,6 @@ const fillLayer = (id: string) => `poi-${id}-fill`;
 const outlineLayer = (id: string) => `poi-${id}-outline`;
 const lineLayer = (id: string) => `poi-${id}-line`;
 const pointLayer = (id: string) => `poi-${id}-point`;
-const clusterLayer = (id: string) => `poi-${id}-cluster`;
-const clusterCountLayer = (id: string) => `poi-${id}-cluster-count`;
 
 function poiLayerIds(def: POIDef): string[] {
   switch (def.geomType) {
@@ -238,13 +227,6 @@ function poiLayerIds(def: POIDef): string[] {
     case "line":
       return [lineLayer(def.id)];
     case "point":
-      if (def.cluster) {
-        return [
-          clusterLayer(def.id),
-          clusterCountLayer(def.id),
-          pointLayer(def.id),
-        ];
-      }
       return [pointLayer(def.id)];
   }
 }
@@ -257,21 +239,11 @@ export async function ensurePOISource(
   if (map.getSource(src)) return;
 
   try {
-    if (def.geomType === "point" && def.cluster) {
-      map.addSource(src, {
-        type: "geojson",
-        data: def.source,
-        cluster: true,
-        clusterRadius: 50,
-        clusterMaxZoom: 13,
-      });
-    } else {
-      map.addSource(src, {
-        type: "geojson",
-        data: def.source,
-        generateId: true,
-      });
-    }
+    map.addSource(src, {
+      type: "geojson",
+      data: def.source,
+      generateId: true,
+    });
   } catch (err) {
     console.error(`[pois] addSource failed for ${def.id}:`, err);
     return;
@@ -334,95 +306,30 @@ export async function ensurePOISource(
       },
     });
   } else if (def.geomType === "point") {
-    if (def.cluster) {
-      tryAddLayer({
-        id: clusterLayer(def.id),
-        type: "circle",
-        source: src,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": def.color,
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            12,
-            50,
-            16,
-            200,
-            22,
-          ],
-          "circle-opacity": 0.85,
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff",
-        },
-        layout: { visibility: "none" },
-      });
-
-      tryAddLayer({
-        id: clusterCountLayer(def.id),
-        type: "symbol",
-        source: src,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-font": ["Noto Sans Regular"],
-          "text-size": 11,
-          visibility: "none",
-        },
-        paint: { "text-color": "#ffffff" },
-      });
-
-      tryAddLayer({
-        id: pointLayer(def.id),
-        type: "circle",
-        source: src,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": def.color,
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            10,
-            3,
-            14,
-            6,
-            16,
-            9,
-          ],
-          "circle-opacity": 0.9,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#ffffff",
-        },
-        layout: { visibility: "none" },
-        ...(def.minZoom ? { minzoom: def.minZoom } : {}),
-      });
-    } else {
-      tryAddLayer({
-        id: pointLayer(def.id),
-        type: "circle",
-        source: src,
-        paint: {
-          "circle-color": def.color,
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            10,
-            4,
-            14,
-            8,
-            16,
-            12,
-          ],
-          "circle-opacity": 0.9,
-          "circle-stroke-width": 1.5,
-          "circle-stroke-color": "#ffffff",
-        },
-        layout: { visibility: "none" },
-        ...(def.minZoom ? { minzoom: def.minZoom } : {}),
-      });
-    }
+    tryAddLayer({
+      id: pointLayer(def.id),
+      type: "circle",
+      source: src,
+      paint: {
+        "circle-color": def.color,
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          10,
+          3,
+          14,
+          6,
+          16,
+          9,
+        ],
+        "circle-opacity": 0.9,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#ffffff",
+      },
+      layout: { visibility: "none" },
+      ...(def.minZoom ? { minzoom: def.minZoom } : {}),
+    });
   }
 
   wirePOIInteractivity(map, def);
@@ -469,35 +376,6 @@ function wirePOIInteractivity(map: MlMap, def: POIDef): void {
       )
       .addTo(map);
   });
-
-  // Cluster click → zoom in
-  if (def.geomType === "point" && def.cluster) {
-    map.on("click", clusterLayer(def.id), async (e) => {
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: [clusterLayer(def.id)],
-      });
-      const f = features[0];
-      if (!f) return;
-      const clusterId = f.properties?.cluster_id as number | undefined;
-      if (clusterId === undefined) return;
-      const src = map.getSource(poiSourceId(def.id)) as unknown as {
-        getClusterExpansionZoom: (id: number) => Promise<number>;
-      };
-      try {
-        const zoom = await src.getClusterExpansionZoom(clusterId);
-        const geom = f.geometry as unknown as { coordinates: [number, number] };
-        map.easeTo({ center: geom.coordinates, zoom });
-      } catch {
-        // ignore
-      }
-    });
-    map.on("mouseenter", clusterLayer(def.id), () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", clusterLayer(def.id), () => {
-      map.getCanvas().style.cursor = "";
-    });
-  }
 }
 
 export function setPOIVisible(
