@@ -52,22 +52,19 @@ export async function ensureHeatmapSource(map: MlMap, def: HeatmapDef): Promise<
           "NON EMERGENCY", 0.5,
           0.5,
         ] as unknown as number,
-        // Low intensity keeps most of the map light; only genuine clusters reach full color
         "heatmap-intensity": [
           "interpolate", ["linear"], ["zoom"],
-          9, 0.2,
-          14, 0.8,
+          9, 0.04,
+          14, 0.15,
         ],
-        // Color ramp: transparent → pale yellow → orange → red
-        // Dark red reserved for density > 0.9 so it appears only at true hotspots
         "heatmap-color": [
           "interpolate", ["linear"], ["heatmap-density"],
           0,    "rgba(0,0,0,0)",
-          0.15, "rgba(255,237,160,0.35)",
-          0.35, "rgba(254,178,76,0.6)",
-          0.6,  "rgba(253,141,60,0.78)",
-          0.8,  "rgba(240,59,32,0.88)",
-          0.92, "rgba(189,0,38,0.94)",
+          0.3,  "rgba(255,237,160,0.25)",
+          0.55, "rgba(254,178,76,0.55)",
+          0.75, "rgba(253,141,60,0.75)",
+          0.9,  "rgba(240,59,32,0.88)",
+          0.97, "rgba(189,0,38,0.95)",
           1.0,  "rgba(128,0,38,0.97)",
         ],
         "heatmap-radius": [
