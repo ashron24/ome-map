@@ -199,7 +199,7 @@ export const POIS: POIDef[] = [
   {
     id: "daycare-prek",
     label: "Day Care & Pre-K",
-    group: "services",
+    group: "facilities",
     source: dataUrl("data/pois/daycare-prek.geojson"),
     geomType: "point",
     color: "#FBC02D",
@@ -215,7 +215,7 @@ export const POIS: POIDef[] = [
   {
     id: "community-gardens",
     label: "Community Gardens",
-    group: "services",
+    group: "facilities",
     source: dataUrl("data/pois/community-gardens.geojson"),
     geomType: "polygon",
     color: "#689F38",
@@ -230,7 +230,7 @@ export const POIS: POIDef[] = [
   {
     id: "linknyc",
     label: "LinkNYC Kiosks",
-    group: "services",
+    group: "facilities",
     source: dataUrl("data/pois/linknyc.geojson"),
     geomType: "point",
     color: "#00ACC1",
@@ -247,7 +247,7 @@ export const POIS: POIDef[] = [
   {
     id: "restrooms",
     label: "Public Restrooms",
-    group: "services",
+    group: "facilities",
     source: dataUrl("data/pois/restrooms.geojson"),
     geomType: "point",
     color: "#5D4037",

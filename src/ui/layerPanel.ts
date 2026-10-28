@@ -68,7 +68,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   root.appendChild(
     buildGroup({
       title: "Basemap",
-      collapsed: false,
+      collapsed: true,
       body: buildBasemapList(initialBasemap, deps.onBasemapChange),
     }),
   );
@@ -78,19 +78,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
       title: "Districts",
       collapsed: false,
       body: buildDistrictList(
-        DISTRICTS.filter((d) => d.group === "core"),
-        deps.map,
-        activeDistricts,
-      ),
-    }),
-  );
-
-  root.appendChild(
-    buildGroup({
-      title: "More Districts",
-      collapsed: true,
-      body: buildDistrictList(
-        DISTRICTS.filter((d) => d.group === "extra"),
+        DISTRICTS,
         deps.map,
         activeDistricts,
       ),
