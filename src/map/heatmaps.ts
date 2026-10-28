@@ -60,12 +60,12 @@ export async function ensureHeatmapSource(map: MlMap, def: HeatmapDef): Promise<
         "heatmap-color": [
           "interpolate", ["linear"], ["heatmap-density"],
           0,    "rgba(0,0,0,0)",
-          0.3,  "rgba(255,237,160,0.25)",
-          0.55, "rgba(254,178,76,0.55)",
-          0.75, "rgba(253,141,60,0.75)",
-          0.9,  "rgba(240,59,32,0.88)",
-          0.97, "rgba(189,0,38,0.95)",
-          1.0,  "rgba(128,0,38,0.97)",
+          0.2,  "rgba(255,210,0,0.5)",
+          0.45, "rgba(254,178,76,0.72)",
+          0.68, "rgba(253,120,45,0.85)",
+          0.85, "rgba(240,59,32,0.92)",
+          0.95, "rgba(189,0,38,0.97)",
+          1.0,  "rgba(128,0,38,1.0)",
         ],
         "heatmap-radius": [
           "interpolate", ["linear"], ["zoom"],
