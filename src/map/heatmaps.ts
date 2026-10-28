@@ -2,7 +2,7 @@ import type { Map as MlMap } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import { dataUrl } from "../util/url.ts";
 
-export type HeatmapId = "hpd-violations" | "dob-violations";
+export type HeatmapId = "hpd-violations" | "dob-violations" | "dep-ecb-violations";
 
 export type HeatmapDef = {
   id: HeatmapId;
@@ -16,22 +16,22 @@ export type HeatmapDef = {
 export const HEATMAPS: HeatmapDef[] = [
   {
     id: "hpd-violations",
-    label: "HPD Open Complaints",
-    description: "Active housing maintenance complaints — emergency complaints weighted 3×. Every complaint triggers an HPD inspection and potential violation.",
+    label: "HPD Open Violations",
+    description: "Open HPD housing violations — Class B (hazardous) and C (immediately hazardous), 150k most recent. Class C weighted 3× in the heatmap. Geocoded via MapPLUTO BBL centroid.",
     source: dataUrl("data/heatmaps/hpd-violations.geojson"),
     attribution: {
       name: "NYC HPD Open Data",
-      href: "https://data.cityofnewyork.us/Housing-Development/Housing-Maintenance-Code-Complaints-and-Problems/ygpa-z7cr",
+      href: "https://data.cityofnewyork.us/Housing-Development/Open-HPD-Violations/csn4-vhvf",
     },
     popupFields: [
-      { key: "urgency", label: "Type" },
-      { key: "category", label: "Category" },
+      { key: "class", label: "Class" },
+      { key: "status", label: "Status" },
     ],
   },
   {
     id: "dob-violations",
     label: "DOB Active Safety Violations",
-    description: "Active NYC Buildings Dept safety violations (150k most recent). Covers elevators, boilers, facades, and other building systems.",
+    description: "Active NYC Buildings Dept safety violations — 150k most recent. Covers elevators, boilers, facades, and other building systems. Geocoded via MapPLUTO BBL centroid.",
     source: dataUrl("data/heatmaps/dob-violations.geojson"),
     attribution: {
       name: "NYC DOB Open Data",
@@ -40,6 +40,20 @@ export const HEATMAPS: HeatmapDef[] = [
     popupFields: [
       { key: "device_type", label: "Category" },
       { key: "violation_type", label: "Code" },
+    ],
+  },
+  {
+    id: "dep-ecb-violations",
+    label: "DEP ECB Open Violations",
+    description: "Open DEP Environmental Control Board violations with compliance or penalty due. Geocoded via MapPLUTO BBL centroid.",
+    source: dataUrl("data/heatmaps/dep-ecb-violations.geojson"),
+    attribution: {
+      name: "NYC DEP Open Data",
+      href: "https://data.cityofnewyork.us/City-Government/DEP-ECB-Violations/skr7-cxt3",
+    },
+    popupFields: [
+      { key: "status", label: "Status" },
+      { key: "description", label: "Violation" },
     ],
   },
 ];
@@ -64,12 +78,11 @@ export async function ensureHeatmapSource(map: MlMap, def: HeatmapDef): Promise<
       type: "heatmap",
       source: src,
       paint: {
-        // Emergency complaints weighted 2×, non-emergency 0.5×
+        // Optional numeric "weight" property per feature (e.g. HPD class C = 3, class B = 1)
         "heatmap-weight": [
-          "match", ["get", "urgency"],
-          "EMERGENCY", 2.0,
-          "NON EMERGENCY", 0.5,
-          0.5,
+          "case", ["has", "weight"],
+          ["to-number", ["get", "weight"]],
+          1.0,
         ] as unknown as number,
         "heatmap-intensity": [
           "interpolate", ["linear"], ["zoom"],
