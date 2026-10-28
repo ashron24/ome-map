@@ -111,8 +111,8 @@ const DATASETS: Dataset[] = [
   {
     id: "bus-shelters",
     label: "Bus Shelters",
-    url: `${NYC_BASE}/t4f2-8md7.geojson?$limit=10000&$select=shelter_id,on_street,cross_stre,corner,boro_name,the_geom`,
-    geometry: "native",
+    url: `${NYC_BASE}/t4f2-8md7.json?$limit=10000&$select=shelter_id,on_street,cross_stre,corner,boro_name,latitude,longitude`,
+    geometry: { lat: "latitude", lon: "longitude" },
     keepProps: ["shelter_id", "on_street", "cross_stre", "corner", "boro_name"],
     renameProps: { on_street: "street", cross_stre: "cross_street", boro_name: "boro" },
     source: NYC_OPEN_DATA,

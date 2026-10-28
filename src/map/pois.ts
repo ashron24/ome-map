@@ -256,24 +256,37 @@ export async function ensurePOISource(
   const src = poiSourceId(def.id);
   if (map.getSource(src)) return;
 
-  if (def.geomType === "point" && def.cluster) {
-    map.addSource(src, {
-      type: "geojson",
-      data: def.source,
-      cluster: true,
-      clusterRadius: 50,
-      clusterMaxZoom: 13,
-    });
-  } else {
-    map.addSource(src, {
-      type: "geojson",
-      data: def.source,
-      generateId: true,
-    });
+  try {
+    if (def.geomType === "point" && def.cluster) {
+      map.addSource(src, {
+        type: "geojson",
+        data: def.source,
+        cluster: true,
+        clusterRadius: 50,
+        clusterMaxZoom: 13,
+      });
+    } else {
+      map.addSource(src, {
+        type: "geojson",
+        data: def.source,
+        generateId: true,
+      });
+    }
+  } catch (err) {
+    console.error(`[pois] addSource failed for ${def.id}:`, err);
+    return;
   }
 
+  const tryAddLayer = (spec: Parameters<MlMap["addLayer"]>[0]) => {
+    try {
+      map.addLayer(spec);
+    } catch (err) {
+      console.error(`[pois] addLayer failed for ${(spec as { id: string }).id}:`, err);
+    }
+  };
+
   if (def.geomType === "polygon") {
-    map.addLayer({
+    tryAddLayer({
       id: fillLayer(def.id),
       type: "fill",
       source: src,
@@ -283,7 +296,7 @@ export async function ensurePOISource(
       },
       layout: { visibility: "none" },
     });
-    map.addLayer({
+    tryAddLayer({
       id: outlineLayer(def.id),
       type: "line",
       source: src,
@@ -295,7 +308,7 @@ export async function ensurePOISource(
       layout: { visibility: "none" },
     });
   } else if (def.geomType === "line") {
-    map.addLayer({
+    tryAddLayer({
       id: lineLayer(def.id),
       type: "line",
       source: src,
@@ -322,7 +335,7 @@ export async function ensurePOISource(
     });
   } else if (def.geomType === "point") {
     if (def.cluster) {
-      map.addLayer({
+      tryAddLayer({
         id: clusterLayer(def.id),
         type: "circle",
         source: src,
@@ -345,21 +358,21 @@ export async function ensurePOISource(
         layout: { visibility: "none" },
       });
 
-      map.addLayer({
+      tryAddLayer({
         id: clusterCountLayer(def.id),
         type: "symbol",
         source: src,
         filter: ["has", "point_count"],
         layout: {
           "text-field": ["get", "point_count_abbreviated"],
-          "text-font": ["Noto Sans Medium"],
+          "text-font": ["Noto Sans Regular"],
           "text-size": 11,
           visibility: "none",
         },
         paint: { "text-color": "#ffffff" },
       });
 
-      map.addLayer({
+      tryAddLayer({
         id: pointLayer(def.id),
         type: "circle",
         source: src,
@@ -385,7 +398,7 @@ export async function ensurePOISource(
         ...(def.minZoom ? { minzoom: def.minZoom } : {}),
       });
     } else {
-      map.addLayer({
+      tryAddLayer({
         id: pointLayer(def.id),
         type: "circle",
         source: src,
