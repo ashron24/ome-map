@@ -29,6 +29,7 @@ export type POIDef = {
   source: string;
   geomType: POIGeomType;
   color: string;
+  hollow?: boolean;
   minZoom?: number;
   popupFields: { key: string; label: string }[];
   attribution: Attribution;
@@ -154,6 +155,7 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/subway-stations.geojson"),
     geomType: "point",
     color: "#0039A6",
+    hollow: true,
     minZoom: 11,
     popupFields: [
       { key: "name", label: "Station" },
@@ -265,14 +267,33 @@ const poiSourceId = (id: string) => `poi-${id}`;
 const fillLayer = (id: string) => `poi-${id}-fill`;
 const outlineLayer = (id: string) => `poi-${id}-outline`;
 const lineLayer = (id: string) => `poi-${id}-line`;
+const lineLabelLayer = (id: string) => `poi-${id}-line-label`;
 const pointLayer = (id: string) => `poi-${id}-point`;
+
+// MTA subway line colors by route identifier
+const MTA_LINE_COLOR = [
+  "match", ["get", "route"],
+  ["1", "2", "3"], "#EE352E",
+  ["4", "5", "6", "6X"], "#00933C",
+  ["7", "7X"], "#B933AD",
+  ["A", "C", "E"], "#0039A6",
+  ["B", "D", "F", "M"], "#FF6319",
+  ["N", "Q", "R", "W"], "#FCCC0A",
+  ["J", "Z"], "#996633",
+  "L", "#A7A9AC",
+  "G", "#6CBE45",
+  ["S", "FS", "GS", "H", "SI"], "#808183",
+  "#555555",
+] as unknown as string;
 
 function poiLayerIds(def: POIDef): string[] {
   switch (def.geomType) {
     case "polygon":
       return [fillLayer(def.id), outlineLayer(def.id)];
     case "line":
-      return [lineLayer(def.id)];
+      return def.id === "subway-lines"
+        ? [lineLayer(def.id), lineLabelLayer(def.id)]
+        : [lineLayer(def.id)];
     case "point":
       return [pointLayer(def.id)];
   }
@@ -327,52 +348,67 @@ export async function ensurePOISource(
       layout: { visibility: "none" },
     });
   } else if (def.geomType === "line") {
+    const isSubway = def.id === "subway-lines";
     tryAddLayer({
       id: lineLayer(def.id),
       type: "line",
       source: src,
       paint: {
-        "line-color": def.color,
+        "line-color": isSubway ? MTA_LINE_COLOR : def.color,
         "line-width": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          10,
-          1,
-          14,
-          2.5,
-          16,
-          4,
+          "interpolate", ["linear"], ["zoom"],
+          10, isSubway ? 1.5 : 1,
+          14, isSubway ? 3 : 2.5,
+          16, isSubway ? 5 : 4,
         ],
-        "line-opacity": 0.85,
+        "line-opacity": 0.9,
       },
       layout: {
         "line-cap": "round",
         "line-join": "round",
         visibility: "none",
       },
+      ...(def.minZoom ? { minzoom: def.minZoom } : {}),
     });
+    if (isSubway) {
+      tryAddLayer({
+        id: lineLabelLayer(def.id),
+        type: "symbol",
+        source: src,
+        layout: {
+          "symbol-placement": "line",
+          "symbol-spacing": 350,
+          "text-field": ["get", "route"],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 10, 9, 14, 12],
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          visibility: "none",
+        },
+        paint: {
+          "text-color": MTA_LINE_COLOR,
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 2,
+        },
+      });
+    }
   } else if (def.geomType === "point") {
     tryAddLayer({
       id: pointLayer(def.id),
       type: "circle",
       source: src,
       paint: {
-        "circle-color": def.color,
+        "circle-color": def.hollow ? "rgba(0,0,0,0)" : def.color,
         "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          10,
-          3,
-          14,
-          6,
-          16,
-          9,
+          "interpolate", ["linear"], ["zoom"],
+          10, 3,
+          14, 6,
+          16, 9,
         ],
-        "circle-opacity": 0.9,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#ffffff",
+        "circle-opacity": def.hollow ? 0 : 0.9,
+        "circle-stroke-width": def.hollow ? 2 : 1,
+        "circle-stroke-color": def.hollow ? def.color : "#ffffff",
+        "circle-stroke-opacity": 0.9,
       },
       layout: { visibility: "none" },
       ...(def.minZoom ? { minzoom: def.minZoom } : {}),

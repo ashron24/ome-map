@@ -46,7 +46,7 @@ export async function ensureDistrictSource(
     source: src,
     paint: {
       "line-color": def.color,
-      "line-width": def.lineWidth,
+      "line-width": def.lineWidth + 0.5,
       "line-opacity": 0.9,
       ...(def.dash ? { "line-dasharray": def.dash } : {}),
     },
