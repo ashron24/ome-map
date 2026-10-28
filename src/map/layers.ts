@@ -12,8 +12,7 @@ export const lineLayerId = (id: string) => `district-${id}${LINE_SUFFIX}`;
 export const labelLayerId = (id: string) => `district-${id}${LABEL_SUFFIX}`;
 const labelSourceId = (id: string) => `district-${id}-labels`;
 
-type LngLat = [number, number];
-type Ring = LngLat[];
+type Ring = number[][];
 type PolygonCoords = Ring[];
 type MultiPolygonCoords = PolygonCoords[];
 
@@ -28,19 +27,13 @@ function bboxArea(ring: Ring): number {
   return (maxX - minX) * (maxY - minY);
 }
 
-function ringCentroid(ring: Ring): LngLat {
-  let sumX = 0, sumY = 0;
-  for (const [x, y] of ring) { sumX += x; sumY += y; }
-  return [sumX / ring.length, sumY / ring.length];
-}
-
-function largestPartPoint(polys: MultiPolygonCoords): LngLat | null {
-  let best: LngLat | null = null;
+function largestPoly(polys: MultiPolygonCoords): PolygonCoords | null {
+  let best: PolygonCoords | null = null;
   let bestArea = -1;
   for (const poly of polys) {
     if (!poly[0]) continue;
     const area = bboxArea(poly[0]);
-    if (area > bestArea) { bestArea = area; best = ringCentroid(poly[0]); }
+    if (area > bestArea) { bestArea = area; best = poly; }
   }
   return best;
 }
@@ -48,21 +41,23 @@ function largestPartPoint(polys: MultiPolygonCoords): LngLat | null {
 async function deriveLabelSource(url: string): Promise<GeoJSON.FeatureCollection> {
   const res = await fetch(url);
   const fc = await res.json() as GeoJSON.FeatureCollection;
-  const points: GeoJSON.Feature[] = [];
+  const features: GeoJSON.Feature[] = [];
   for (const f of fc.features) {
     const geom = f.geometry as GeoJSON.Geometry | null;
     if (!geom) continue;
-    let pt: LngLat | null = null;
+    let outGeom: GeoJSON.Geometry;
     if (geom.type === "Polygon") {
-      const coords = geom.coordinates as PolygonCoords;
-      if (coords[0]) pt = ringCentroid(coords[0]);
+      outGeom = geom;
     } else if (geom.type === "MultiPolygon") {
-      pt = largestPartPoint(geom.coordinates as MultiPolygonCoords);
+      const largest = largestPoly(geom.coordinates as MultiPolygonCoords);
+      if (!largest) continue;
+      outGeom = { type: "Polygon", coordinates: largest };
+    } else {
+      continue;
     }
-    if (!pt) continue;
-    points.push({ type: "Feature", properties: f.properties, geometry: { type: "Point", coordinates: pt } });
+    features.push({ type: "Feature", properties: f.properties, geometry: outGeom });
   }
-  return { type: "FeatureCollection", features: points };
+  return { type: "FeatureCollection", features };
 }
 
 export async function ensureDistrictSource(
