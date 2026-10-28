@@ -37,7 +37,7 @@ async function fetchAll(): Promise<Row[]> {
   let offset = 0;
   const rows: Row[] = [];
   while (true) {
-    const url = `${BASE}?$select=${FIELDS}&$limit=${limit}&$offset=${offset}&$order=:id`;
+    const url = `${BASE}?$select=${FIELDS}&$where=date='2026'&$limit=${limit}&$offset=${offset}&$order=:id`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status} fetching offset ${offset}`);
     const page = (await res.json()) as Row[];
