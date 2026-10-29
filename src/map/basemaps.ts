@@ -1,5 +1,6 @@
 import type { StyleSpecification } from "maplibre-gl";
 import { loadNycBasemap } from "./nyc-basemap.ts";
+import { deriveLabelSource } from "./labelSource.ts";
 import { dataUrl } from "../util/url.ts";
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -64,7 +65,11 @@ export const BASEMAPS: BasemapDef[] = [
       });
 
       const sources = style.sources as Record<string, unknown>;
-      sources["_nta_bg"] = { type: "geojson", data: dataUrl("neighborhoods.geojson") };
+      // One label per neighborhood, on its largest polygon part
+      sources["_nta_bg"] = {
+        type: "geojson",
+        data: await deriveLabelSource(dataUrl("neighborhoods.geojson"), "NTAName3"),
+      };
       sources["_boroughs_bg"] = {
         type: "geojson",
         data: {
