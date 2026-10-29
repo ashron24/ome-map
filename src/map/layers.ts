@@ -1,6 +1,17 @@
 import type { Map as MlMap, MapGeoJSONFeature } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import type { DistrictDef } from "./districts.ts";
+import { dataUrl } from "../util/url.ts";
+
+let cdWebsitesCache: Record<string, string> | null = null;
+async function loadCdWebsites(): Promise<Record<string, string>> {
+  if (cdWebsitesCache) return cdWebsitesCache;
+  try {
+    const res = await fetch(dataUrl("data/cd-websites.json"));
+    if (res.ok) cdWebsitesCache = await res.json() as Record<string, string>;
+  } catch { /* non-fatal */ }
+  return cdWebsitesCache ?? {};
+}
 
 const FILL_SUFFIX = "-fill";
 const LINE_SUFFIX = "-line";
@@ -164,7 +175,7 @@ function wireInteractivity(map: MlMap, def: DistrictDef): void {
     map.getCanvas().style.cursor = "";
   });
 
-  map.on("click", fill, (e) => {
+  map.on("click", fill, async (e) => {
     if (!e.features?.length) return;
     const f = e.features[0] as MapGeoJSONFeature;
     const props = f.properties as { nameCol?: string; nameAlt?: string | null };
@@ -172,12 +183,21 @@ function wireInteractivity(map: MlMap, def: DistrictDef): void {
     const alt = props.nameAlt ? `<dt>Alt</dt><dd>${escapeHtml(props.nameAlt)}</dd>` : "";
     const attribution = `<a class="attribution-link" href="${def.attribution.href}" target="_blank" rel="noopener">${escapeHtml(def.attribution.name)}</a>`;
 
+    let websiteRow = "";
+    if (def.id === "cd") {
+      const websites = await loadCdWebsites();
+      const url = websites[name];
+      if (url) {
+        websiteRow = `<dt>Website</dt><dd><a class="popup-link" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a></dd>`;
+      }
+    }
+
     popup?.remove();
     popup = new Popup({ closeOnClick: true })
       .setLngLat(e.lngLat)
       .setHTML(
         `<div><strong>${escapeHtml(def.label)}</strong></div>` +
-          `<dl><dt>${escapeHtml(def.labelPrefix?.trim() ?? "Name")}</dt><dd>${escapeHtml(name)}</dd>${alt}</dl>` +
+          `<dl><dt>${escapeHtml(def.labelPrefix?.trim() ?? "Name")}</dt><dd>${escapeHtml(name)}</dd>${alt}${websiteRow}</dl>` +
           `<div style="margin-top:6px;font-size:11px;color:#999;">Source: ${attribution}</div>`,
       )
       .addTo(map);

@@ -612,7 +612,7 @@ export async function ensurePOISource(
           ? def.colorExpr as unknown as string
           : def.hollow ? "#888888" : def.color,
         "circle-radius": def.hollow
-          ? ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 3.5, 16, 5]
+          ? ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 16, 8]
           : ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 6, 16, 9],
         "circle-opacity": def.hollow ? 0.5 : 0.9,
         "circle-stroke-width": def.hollow ? 1.5 : 1,
@@ -634,7 +634,7 @@ export async function ensurePOISource(
         layout: {
           "text-field": ["get", "name"],
           "text-font": ["Noto Sans Bold"],
-          "text-size": 13,
+          "text-size": 15,
           "text-offset": [0, 1.2],
           "text-anchor": "top",
           "text-allow-overlap": false,

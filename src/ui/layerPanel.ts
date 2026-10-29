@@ -381,6 +381,9 @@ function buildSubwaysRow(
       active.add("subway-lines");
       await ensurePOISource(map, stationsDef);
       await ensurePOISource(map, linesDef);
+      // Ensure station dots and labels render above the lines layer
+      try { map.moveLayer("poi-subway-stations-point"); } catch (_) {}
+      try { map.moveLayer("poi-subway-stations-station-label"); } catch (_) {}
       setPOIVisible(map, stationsDef, true);
       setPOIVisible(map, linesDef, true);
       subLegend.style.display = "block";
