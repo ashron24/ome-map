@@ -219,11 +219,13 @@ html, body {
 
 #panel h1 {
   margin: 0 0 6px;
-  font-size: 22px;
+  font-size: 32px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  font-family: "Clash Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #222;
+  text-align: center;
+  color: #111;
 }
 
 #panel .subtitle {
@@ -231,6 +233,7 @@ html, body {
   font-size: 11px;
   color: #777;
   line-height: 1.4;
+  text-align: center;
 }
 
 .group {
