@@ -18,7 +18,7 @@ html, body {
 #panel {
   position: absolute;
   top: 12px;
-  left: 48px;
+  left: 4px;
   width: 280px;
   max-height: calc(100vh - 24px);
   overflow-y: auto;

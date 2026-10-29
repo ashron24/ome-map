@@ -18,7 +18,8 @@ export type POIId =
   | "subway-stations"
   | "bus-routes"
   | "dycd-sites"
-  | "sbs-sites";
+  | "sbs-sites"
+  | "cbo-sites";
 
 export type POIGeomType = "point" | "polygon" | "line";
 
@@ -86,6 +87,22 @@ const SBS_COLOR_EXPR = [
   "match",
   ["get", "location_type"],
   ...SBS_TYPE_COLORS.flat(),
+  "#888888",
+];
+
+// CBO borough colors
+const CBO_BOROUGH_COLORS: [string, string][] = [
+  ["MANHATTAN", "#1565C0"],
+  ["BROOKLYN", "#2E7D32"],
+  ["QUEENS", "#F57C00"],
+  ["BRONX", "#C62828"],
+  ["STATEN ISLAND", "#6A1B9A"],
+];
+
+const CBO_COLOR_EXPR = [
+  "match",
+  ["get", "borough"],
+  ...CBO_BOROUGH_COLORS.flat(),
   "#888888",
 ];
 
@@ -331,7 +348,7 @@ export const POIS: POIDef[] = [
   },
   {
     id: "sbs-sites",
-    label: "SBS Service Locations",
+    label: "SBS Program Sites",
     group: "services",
     source: dataUrl("data/pois/sbs-sites.geojson"),
     geomType: "point",
@@ -350,6 +367,31 @@ export const POIS: POIDef[] = [
     attribution: {
       name: "NYC SBS / NYC Open Data",
       href: "https://data.cityofnewyork.us/dataset/Center-Service-Locations/6smc-7mk6",
+    },
+  },
+  {
+    id: "cbo-sites",
+    label: "NYC Service CBOs",
+    group: "services",
+    source: dataUrl("data/pois/cbo-sites.geojson"),
+    geomType: "point",
+    color: "#888888",
+    colorExpr: CBO_COLOR_EXPR,
+    legend: CBO_BOROUGH_COLORS.map(([label, color]) => ({
+      label: label.charAt(0) + label.slice(1).toLowerCase(),
+      color,
+    })),
+    popupFields: [
+      { key: "name", label: "Organization" },
+      { key: "mission", label: "Mission" },
+      { key: "address", label: "Address" },
+      { key: "borough", label: "Borough" },
+      { key: "nta", label: "Neighborhood" },
+      { key: "website", label: "Website" },
+    ],
+    attribution: {
+      name: "NYC Open Data",
+      href: "https://data.cityofnewyork.us/Social-Services/NYC-Community-Based-Organizations/i4kb-6ab6",
     },
   },
 ];

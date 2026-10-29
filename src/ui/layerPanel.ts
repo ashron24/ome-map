@@ -76,7 +76,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   root.appendChild(
     buildGroup({
       title: "Districts",
-      collapsed: false,
+      collapsed: true,
       body: buildDistrictList(
         DISTRICTS,
         deps.map,
@@ -88,7 +88,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   root.appendChild(
     buildGroup({
       title: "Facilities & Infrastructure",
-      collapsed: false,
+      collapsed: true,
       body: buildPOIList(
         POIS.filter((p) => p.group === "facilities"),
         deps.map,
@@ -111,7 +111,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   root.appendChild(
     buildGroup({
-      title: "Agency Open Violations",
+      title: "Agency Enforcement",
       collapsed: true,
       body: buildHeatmapList(HEATMAPS, deps.map, activeHeatmaps),
     }),

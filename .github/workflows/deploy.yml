@@ -70,6 +70,7 @@ jobs:
           npm run data:census || echo "[deploy] census skipped"
           npm run data:dycd || echo "[deploy] dycd skipped"
           npm run data:sbs || echo "[deploy] sbs skipped"
+          npm run data:cbos || echo "[deploy] cbos skipped"
 
       - name: Build site
         env:

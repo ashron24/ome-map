@@ -14,8 +14,9 @@
     "data:census": "tsx scripts/fetch_census.ts",
     "data:dycd": "tsx scripts/fetch_dycd.ts",
     "data:sbs": "tsx scripts/fetch_sbs.ts",
-    "data:all": "npm run data:boundaries && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs",
-    "data:all:direct": "npm run data:boundaries:direct && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs"
+    "data:cbos": "tsx scripts/fetch_cbos.ts",
+    "data:all": "npm run data:boundaries && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs && npm run data:cbos",
+    "data:all:direct": "npm run data:boundaries:direct && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs && npm run data:cbos"
   },
   "dependencies": {
     "maplibre-gl": "^4.7.1"
