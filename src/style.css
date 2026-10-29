@@ -18,7 +18,7 @@ html, body {
 #panel {
   position: absolute;
   top: 12px;
-  left: 56px;
+  left: 48px;
   width: 280px;
   max-height: calc(100vh - 24px);
   overflow-y: auto;
@@ -41,7 +41,7 @@ html, body {
   top: 10px;
   right: 10px;
   z-index: 6;
-  width: 80px;
+  width: 96px;
   height: auto;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
@@ -52,10 +52,10 @@ html, body {
 
 #search-root {
   position: absolute;
-  top: 58px;
-  left: 12px;
+  top: 10px;
+  right: 116px;
   z-index: 6;
-  width: 300px;
+  width: 270px;
 }
 
 .search {
@@ -166,7 +166,7 @@ html, body {
 #panel-toggle {
   position: absolute;
   top: 12px;
-  left: 12px;
+  left: 4px;
   z-index: 6;
   display: inline-flex;
   align-items: center;
@@ -202,7 +202,7 @@ html, body {
     width: calc(100vw - 24px);
     max-width: 320px;
     top: 56px;
-    left: 12px;
+    left: 4px;
   }
 
   .panel-toggle-text {
