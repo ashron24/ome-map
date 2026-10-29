@@ -17,7 +17,8 @@ export type POIId =
   | "subway-lines"
   | "subway-stations"
   | "bus-routes"
-  | "dycd-sites";
+  | "dycd-sites"
+  | "sbs-sites";
 
 export type POIGeomType = "point" | "polygon" | "line";
 
@@ -70,6 +71,21 @@ const DYCD_COLOR_EXPR = [
   "match",
   ["get", "program_area"],
   ...DYCD_AREA_COLORS.flat(),
+  "#888888",
+];
+
+// SBS location type colors
+const SBS_TYPE_COLORS: [string, string][] = [
+  ["Workforce1 Career Center", "#1565C0"],
+  ["NYC Business Solutions Center", "#2E7D32"],
+  ["NYC Business Solutions Industrial and Transportation", "#E65100"],
+  ["Employment Works", "#6A1B9A"],
+];
+
+const SBS_COLOR_EXPR = [
+  "match",
+  ["get", "location_type"],
+  ...SBS_TYPE_COLORS.flat(),
   "#888888",
 ];
 
@@ -311,6 +327,29 @@ export const POIS: POIDef[] = [
     attribution: {
       name: "NYC DYCD / NYC Open Data",
       href: "https://data.cityofnewyork.us/Social-Services/DYCD-Program-Sites/ebkm-iyma",
+    },
+  },
+  {
+    id: "sbs-sites",
+    label: "SBS Service Locations",
+    group: "services",
+    source: dataUrl("data/pois/sbs-sites.geojson"),
+    geomType: "point",
+    color: "#888888",
+    colorExpr: SBS_COLOR_EXPR,
+    legend: SBS_TYPE_COLORS.map(([label, color]) => ({ label, color })),
+    popupFields: [
+      { key: "name", label: "Site" },
+      { key: "location_type", label: "Type" },
+      { key: "hours", label: "Hours" },
+      { key: "address", label: "Address" },
+      { key: "city", label: "City" },
+      { key: "borough", label: "Borough" },
+      { key: "details", label: "Details" },
+    ],
+    attribution: {
+      name: "NYC SBS / NYC Open Data",
+      href: "https://data.cityofnewyork.us/dataset/Center-Service-Locations/6smc-7mk6",
     },
   },
 ];

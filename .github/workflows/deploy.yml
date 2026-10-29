@@ -69,6 +69,7 @@ jobs:
           npm run data:heatmaps || echo "[deploy] heatmaps skipped"
           npm run data:census || echo "[deploy] census skipped"
           npm run data:dycd || echo "[deploy] dycd skipped"
+          npm run data:sbs || echo "[deploy] sbs skipped"
 
       - name: Build site
         env:
