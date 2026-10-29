@@ -42,7 +42,7 @@ const NYC_OPEN_DATA = {
 export const DISTRICTS: DistrictDef[] = [
   {
     id: "cd",
-    label: "Community Boards",
+    label: "Community Board",
     color: "#000000",
     lineWidth: 3,
     group: "core",
@@ -81,7 +81,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "nycongress",
-    label: "US Congressional",
+    label: "US Congress",
     color: "#B22222",
     lineWidth: 3,
     labelPrefix: "CG ",
@@ -91,7 +91,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "pp",
-    label: "Police Precincts",
+    label: "Police Precinct",
     color: "#1f3b8b",
     lineWidth: 3,
     labelPrefix: "PP ",
@@ -112,7 +112,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "sd",
-    label: "School Districts",
+    label: "School District",
     color: "#d95f0e",
     lineWidth: 3.5,
     labelPrefix: "SD ",
@@ -122,7 +122,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "dsny",
-    label: "Sanitation Districts",
+    label: "Sanitation District",
     color: "#2ca02c",
     lineWidth: 2.5,
     group: "core",
@@ -131,7 +131,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "fb",
-    label: "Fire Battalions",
+    label: "Fire Battalion",
     color: "#e6550d",
     lineWidth: 2.5,
     group: "core",
@@ -140,7 +140,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "hc",
-    label: "Health Center Districts",
+    label: "Health Center District",
     color: "#17a2b8",
     lineWidth: 2.5,
     group: "core",
@@ -158,7 +158,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "hd",
-    label: "Historic Districts",
+    label: "Historic District",
     color: "#bcbd22",
     lineWidth: 2.5,
     group: "core",
