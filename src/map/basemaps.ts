@@ -124,16 +124,17 @@ export const BASEMAPS: BasemapDef[] = [
         layout: {
           "text-field": ["coalesce", ["get", "NTAName3"], ["get", "AltName"], ""],
           "text-font": ["Noto Sans Bold"],
-          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 13, 12, 15, 15],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 11, 13, 14, 15, 17],
           "text-allow-overlap": false,
           "text-padding": 4,
           "text-max-width": 8,
+          "text-letter-spacing": 0.02,
         },
         paint: {
-          "text-color": "#555",
-          "text-halo-color": "rgba(255,255,255,0.9)",
-          "text-halo-width": 1.5,
-          "text-halo-blur": 0.5,
+          "text-color": "#777",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 2.5,
+          "text-halo-blur": 0,
         },
       });
 

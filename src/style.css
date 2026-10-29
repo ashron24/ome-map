@@ -18,7 +18,7 @@ html, body {
 #panel {
   position: absolute;
   top: 6px;
-  left: 4px;
+  left: 10px;
   width: 255px;
   max-height: calc(100vh - 18px);
   overflow-y: auto;
@@ -202,7 +202,7 @@ html, body {
     width: calc(100vw - 24px);
     max-width: 300px;
     top: 6px;
-    left: 4px;
+    left: 10px;
   }
 
   .panel-toggle-text {
