@@ -10,13 +10,13 @@ The original map ran on Leaflet + CartoDB. CartoDB has been sunset and the origi
 
 | Panel section | Layers | Source |
 |---|---|---|
-| **Basemap** (4) | NYC Basemap (OTI v3) · Light (NYC Labels Only) · OSM Streets · Satellite | NYC OTI / Esri vector tiles, OpenFreeMap, OpenStreetMap, Esri |
 | **Districts** (14) | Community Board · City Council · NY State Senate · NY State Assembly · US Congress · Police Precinct · School District · Sanitation District · Fire Battalion · Health Center District · BIDs · Historic District · Zipcode · Neighborhood (NTA) | [`MODA-NYC/nyc-geography-crosswalks`](https://github.com/MODA-NYC/nyc-geography-crosswalks) (fallback: NYC Planning ArcGIS); DSNY districts from NYC Open Data |
 | **Facilities & Infrastructure** (14) | Public Schools (K-12) · Colleges & Universities · Day Care & Pre-K · Libraries · Hospitals & Clinics · Cultural Institutions · Parks · Community Gardens · Bike Routes · Subways (stations + lines) · Bus Routes · Bus Shelters · LinkNYC Kiosks · Public Restrooms | NYC DCP FacDB, NYC Open Data |
 | **Outreach & Services** (4) | DYCD Program Sites · SBS Program Sites · NYC Service CBOs · Soup Kitchens & Food Pantries | NYC Open Data, NYC DCP FacDB |
 | **Agency Enforcement** (3 heatmaps) | HPD Open Violations · DOB Active Safety Violations · DEP ECB Open Violations | NYC Open Data, geocoded via MapPLUTO BBL centroids |
 | **Demographics — choropleths** (7) | % Hispanic · % White (non-Hispanic) · % Black (non-Hispanic) · % Asian (non-Hispanic) · % Foreign-Born · % Non-Citizen · Median HH Income | US Census Bureau API, ACS 5-Year (2019–2023), census tracts |
 | **Demographics — ethnicity** (15 graduated symbols) | *Hispanic / Latino:* Puerto Rican, Dominican, Mexican, Central American, South American, Colombian, Ecuadorian · *Asian:* Chinese, Korean, Filipino, Asian Indian, Bangladeshi, Pakistani · *Arab / Turkish / Albanian:* Arab, Turkish, Albanian | ACS tables B03001, B02015, B04006 via the Census Bureau API |
+| **Basemap** (4) | Light (NYC Labels Only, default) · NYC Basemap (OTI v3) · OSM Streets · Satellite | NYC OTI / Esri vector tiles, OpenFreeMap, OpenStreetMap, Esri |
 
 Other features:
 

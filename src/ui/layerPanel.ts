@@ -67,14 +67,6 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   root.appendChild(
     buildGroup({
-      title: "Basemap",
-      collapsed: true,
-      body: buildBasemapList(initialBasemap, deps.onBasemapChange),
-    }),
-  );
-
-  root.appendChild(
-    buildGroup({
       title: "Districts",
       collapsed: true,
       body: buildDistrictList(
@@ -125,6 +117,14 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
       body: buildDemographicsBody(deps.map, deps.initialMetric, activeEthnicities),
     }),
   );
+
+  root.appendChild(
+    buildGroup({
+      title: "Basemap",
+      collapsed: true,
+      body: buildBasemapList(initialBasemap, deps.onBasemapChange),
+    }),
+  );
 }
 
 function buildGroup(opts: {
@@ -154,7 +154,12 @@ function buildBasemapList(
   onChange: (id: BasemapId) => void,
 ): HTMLElement {
   const list = document.createElement("div");
-  for (const b of BASEMAPS) {
+  // Default basemap first, the rest in definition order
+  const ordered = [
+    ...BASEMAPS.filter((b) => b.id === DEFAULT_BASEMAP),
+    ...BASEMAPS.filter((b) => b.id !== DEFAULT_BASEMAP),
+  ];
+  for (const b of ordered) {
     const row = document.createElement("label");
     row.className = "layer-row";
 
