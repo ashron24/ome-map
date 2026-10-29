@@ -79,12 +79,7 @@ export async function ensureDistrictSource(
     source: src,
     paint: {
       "fill-color": def.color,
-      "fill-opacity": [
-        "case",
-        ["boolean", ["feature-state", "hover"], false],
-        0.18,
-        0,
-      ],
+      "fill-opacity": 0,
     },
     layout: { visibility: "none" },
   });
@@ -146,28 +141,16 @@ export async function ensureDistrictSource(
 
 function wireInteractivity(map: MlMap, def: DistrictDef): void {
   let popup: Popup | null = null;
-  let hovered: number | string | undefined;
 
   const fill = fillLayerId(def.id);
-  const src = sourceId(def.id);
 
   map.on("mousemove", fill, (e) => {
     if (!e.features?.length) return;
     map.getCanvas().style.cursor = "pointer";
-    const f = e.features[0] as MapGeoJSONFeature;
-    if (hovered !== undefined) {
-      map.setFeatureState({ source: src, id: hovered }, { hover: false });
-    }
-    hovered = f.id as number | string;
-    map.setFeatureState({ source: src, id: hovered }, { hover: true });
   });
 
   map.on("mouseleave", fill, () => {
     map.getCanvas().style.cursor = "";
-    if (hovered !== undefined) {
-      map.setFeatureState({ source: src, id: hovered }, { hover: false });
-      hovered = undefined;
-    }
   });
 
   map.on("click", fill, (e) => {

@@ -75,12 +75,20 @@ const DYCD_COLOR_EXPR = [
   "#888888",
 ];
 
-// SBS location type colors
+// SBS location type colors (data values for match expression)
 const SBS_TYPE_COLORS: [string, string][] = [
   ["Workforce1 Career Center", "#C62828"],
   ["NYC Business Solutions Center", "#2E7D32"],
   ["NYC Business Solutions Industrial and Transportation", "#F9A825"],
   ["Employment Works", "#6A1B9A"],
+];
+
+// Shortened display labels for the legend
+const SBS_LEGEND = [
+  { label: "Workforce1 Career Center", color: "#C62828" },
+  { label: "NYC Business Solutions Center", color: "#2E7D32" },
+  { label: "NYC Business Solutions I & T", color: "#F9A825" },
+  { label: "Employment Works", color: "#6A1B9A" },
 ];
 
 const SBS_COLOR_EXPR = [
@@ -214,19 +222,6 @@ export const POIS: POIDef[] = [
     attribution: NYC_OPEN_DATA,
   },
   {
-    id: "subway-lines",
-    label: "Subway Lines",
-    group: "facilities",
-    source: dataUrl("data/pois/subway-lines.geojson"),
-    geomType: "line",
-    color: "#0039A6",
-    popupFields: [
-      { key: "name", label: "Line" },
-      { key: "route", label: "Route" },
-    ],
-    attribution: { name: "MTA / NY Open Data", href: "https://data.ny.gov/Transportation/MTA-Subway-Service-Lines/s692-irgq" },
-  },
-  {
     id: "subway-stations",
     label: "Subway Stations",
     group: "facilities",
@@ -242,6 +237,19 @@ export const POIS: POIDef[] = [
       { key: "structure", label: "Structure" },
     ],
     attribution: { name: "MTA / NY Open Data", href: "https://data.ny.gov/Transportation/MTA-Subway-Stations/39hk-dx4f" },
+  },
+  {
+    id: "subway-lines",
+    label: "Subway Lines",
+    group: "facilities",
+    source: dataUrl("data/pois/subway-lines.geojson"),
+    geomType: "line",
+    color: "#0039A6",
+    popupFields: [
+      { key: "name", label: "Line" },
+      { key: "route", label: "Route" },
+    ],
+    attribution: { name: "MTA / NY Open Data", href: "https://data.ny.gov/Transportation/MTA-Subway-Service-Lines/s692-irgq" },
   },
   {
     id: "bus-routes",
@@ -339,7 +347,7 @@ export const POIS: POIDef[] = [
     geomType: "point",
     color: "#888888",
     colorExpr: SBS_COLOR_EXPR,
-    legend: SBS_TYPE_COLORS.map(([label, color]) => ({ label, color })),
+    legend: SBS_LEGEND,
     popupFields: [
       { key: "name", label: "Site" },
       { key: "location_type", label: "Type" },
@@ -493,7 +501,7 @@ export async function ensurePOISource(
           "symbol-spacing": 350,
           "text-field": ["get", "route"],
           "text-font": ["Noto Sans Bold"],
-          "text-size": ["interpolate", ["linear"], ["zoom"], 10, 9, 14, 12],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 10, 11, 14, 15],
           "text-allow-overlap": false,
           "text-ignore-placement": false,
           visibility: "none",

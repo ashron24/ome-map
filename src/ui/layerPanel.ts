@@ -56,7 +56,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   root.innerHTML = "";
 
   const title = document.createElement("h1");
-  title.textContent = "MOME Map";
+  title.textContent = "OME MAP";
   root.appendChild(title);
 
   const subtitle = document.createElement("p");
@@ -289,7 +289,7 @@ function buildPOIRow(
 
   const swatch = document.createElement("span");
   swatch.className = "swatch " + swatchClass(def);
-  swatch.style.background = def.geomType === "line" ? "transparent" : def.color;
+  swatch.style.background = def.color;
   swatch.style.color = def.color;
   swatch.style.borderColor = def.color;
 
@@ -470,6 +470,7 @@ function buildDemographicsBody(
   const divider = document.createElement("div");
   divider.className = "ethnicity-heading";
   divider.textContent = "Ethnicity";
+  divider.style.marginTop = "12px";
   container.appendChild(divider);
   container.appendChild(buildEthnicitySection(map, activeEthnicities));
   return container;
