@@ -438,6 +438,37 @@ html, body {
 .maplibregl-popup-content {
   font-size: 13px;
   padding: 10px 12px;
+  background: #111;
+  color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+
+/* Match popup arrow to dark background for each anchor direction */
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: #111;
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: #111;
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: #111;
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: #111;
+}
+
+.maplibregl-popup-close-button {
+  color: #aaa;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.1);
 }
 
 .maplibregl-popup-content dl {
@@ -449,19 +480,29 @@ html, body {
 
 .maplibregl-popup-content dt {
   font-weight: 600;
-  color: #555;
+  color: #aaa;
 }
 
 .maplibregl-popup-content dd {
   margin: 0;
-  color: #222;
+  color: #fff;
 }
 
 .attribution-link {
-  color: #2b8cbe;
+  color: #7ab8d8;
   text-decoration: none;
 }
 
 .attribution-link:hover {
+  text-decoration: underline;
+}
+
+.popup-link {
+  color: #7ab8d8;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.popup-link:hover {
   text-decoration: underline;
 }

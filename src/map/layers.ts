@@ -178,7 +178,7 @@ function wireInteractivity(map: MlMap, def: DistrictDef): void {
       .setHTML(
         `<div><strong>${escapeHtml(def.label)}</strong></div>` +
           `<dl><dt>${escapeHtml(def.labelPrefix?.trim() ?? "Name")}</dt><dd>${escapeHtml(name)}</dd>${alt}</dl>` +
-          `<div style="margin-top:6px;font-size:11px;color:#888;">Source: ${attribution}</div>`,
+          `<div style="margin-top:6px;font-size:11px;color:#999;">Source: ${attribution}</div>`,
       )
       .addTo(map);
   });

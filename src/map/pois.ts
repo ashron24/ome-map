@@ -677,7 +677,11 @@ function wirePOIInteractivity(map: MlMap, def: POIDef): void {
       .map(({ key, label }) => {
         const v = props[key];
         if (v === undefined || v === null || v === "") return "";
-        return `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(String(v))}</dd>`;
+        const str = String(v);
+        const cell = isUrl(str)
+          ? `<a class="popup-link" href="${str}" target="_blank" rel="noopener">${escapeHtml(str)}</a>`
+          : escapeHtml(str);
+        return `<dt>${escapeHtml(label)}</dt><dd>${cell}</dd>`;
       })
       .filter(Boolean)
       .join("");
@@ -690,7 +694,7 @@ function wirePOIInteractivity(map: MlMap, def: POIDef): void {
       .setHTML(
         `<div><strong>${escapeHtml(def.label)}</strong></div>` +
           `<dl>${rows}</dl>` +
-          `<div style="margin-top:6px;font-size:11px;color:#888;">Source: ${attribution}</div>`,
+          `<div style="margin-top:6px;font-size:11px;color:#999;">Source: ${attribution}</div>`,
       )
       .addTo(map);
   });
@@ -705,6 +709,10 @@ export function setPOIVisible(
   for (const id of poiLayerIds(def)) {
     if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", v);
   }
+}
+
+function isUrl(s: string): boolean {
+  return s.startsWith("http://") || s.startsWith("https://");
 }
 
 function escapeHtml(s: string): string {
