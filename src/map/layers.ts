@@ -27,35 +27,46 @@ function bboxArea(ring: Ring): number {
   return (maxX - minX) * (maxY - minY);
 }
 
-function largestPoly(polys: MultiPolygonCoords): PolygonCoords | null {
-  let best: PolygonCoords | null = null;
-  let bestArea = -1;
-  for (const poly of polys) {
-    if (!poly[0]) continue;
-    const area = bboxArea(poly[0]);
-    if (area > bestArea) { bestArea = area; best = poly; }
-  }
-  return best;
-}
 
 async function deriveLabelSource(url: string): Promise<GeoJSON.FeatureCollection> {
   const res = await fetch(url);
   const fc = await res.json() as GeoJSON.FeatureCollection;
-  const features: GeoJSON.Feature[] = [];
+
+  // Group by nameCol so we emit exactly one label per district, placed on
+  // the largest polygon part — handles both MultiPolygon features and
+  // datasets where each polygon part is a separate Feature.
+  const best = new Map<string, { area: number; poly: PolygonCoords; props: GeoJSON.GeoJsonProperties }>();
+
   for (const f of fc.features) {
     const geom = f.geometry as GeoJSON.Geometry | null;
     if (!geom) continue;
-    let outGeom: GeoJSON.Geometry;
+    const nameCol = (f.properties?.["nameCol"] as string | null | undefined) ?? null;
+    if (!nameCol) continue;
+
+    let candidates: PolygonCoords[] = [];
     if (geom.type === "Polygon") {
-      outGeom = geom;
+      candidates = [geom.coordinates as PolygonCoords];
     } else if (geom.type === "MultiPolygon") {
-      const largest = largestPoly(geom.coordinates as MultiPolygonCoords);
-      if (!largest) continue;
-      outGeom = { type: "Polygon", coordinates: largest };
-    } else {
-      continue;
+      candidates = geom.coordinates as MultiPolygonCoords;
     }
-    features.push({ type: "Feature", properties: f.properties, geometry: outGeom });
+
+    for (const poly of candidates) {
+      if (!poly[0]) continue;
+      const area = bboxArea(poly[0]);
+      const existing = best.get(nameCol);
+      if (!existing || area > existing.area) {
+        best.set(nameCol, { area, poly, props: f.properties });
+      }
+    }
+  }
+
+  const features: GeoJSON.Feature[] = [];
+  for (const { poly, props } of best.values()) {
+    features.push({
+      type: "Feature",
+      properties: props,
+      geometry: { type: "Polygon", coordinates: poly },
+    });
   }
   return { type: "FeatureCollection", features };
 }
