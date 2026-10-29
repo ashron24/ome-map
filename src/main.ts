@@ -6,6 +6,7 @@ import {
   BASEMAPS,
   DEFAULT_BASEMAP,
   loadBasemapStyle,
+  registerBasemapLabels,
 } from "./map/basemaps.ts";
 import type { BasemapId } from "./map/basemaps.ts";
 import { DISTRICTS } from "./map/districts.ts";
@@ -66,6 +67,7 @@ map.on("style.load", () => {
   if (!map.hasImage(STATION_ICON)) {
     map.addImage(STATION_ICON, stationIcon(), { pixelRatio: 2 });
   }
+  registerBasemapLabels(map);
 });
 
 const state: AppState = {

@@ -1,6 +1,8 @@
 import type { StyleSpecification } from "maplibre-gl";
 import { loadNycBasemap } from "./nyc-basemap.ts";
-import { deriveLabelSource } from "./labelSource.ts";
+import { registerDynamicLabels, zoomStopsExpression } from "./dynamicLabels.ts";
+import type { ZoomStops } from "./dynamicLabels.ts";
+import type { Map as MlMap } from "maplibre-gl";
 import { dataUrl } from "../util/url.ts";
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -36,6 +38,25 @@ const GLYPHS_URL =
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
+const NTA_LABEL_SOURCE = "_nta_bg";
+const NTA_LABEL_LAYER = "_nta_bg_labels";
+const NTA_TEXT_SIZE: ZoomStops = [[11, 10], [13, 14], [15, 20]];
+const NTA_MAX_WIDTH = 8;
+
+/** Keep the Light basemap's neighborhood labels fitted to the viewport. Call on every style.load. */
+export function registerBasemapLabels(map: MlMap): void {
+  if (!map.getLayer(NTA_LABEL_LAYER)) return;
+  void registerDynamicLabels(map, {
+    sourceId: NTA_LABEL_SOURCE,
+    layerId: NTA_LABEL_LAYER,
+    url: dataUrl("neighborhoods.geojson"),
+    nameKey: "NTAName3",
+    text: (p) => ((p?.["NTAName3"] ?? p?.["AltName"] ?? "") as string),
+    textSize: NTA_TEXT_SIZE,
+    maxWidthEms: NTA_MAX_WIDTH,
+  });
+}
+
 export const BASEMAPS: BasemapDef[] = [
   {
     id: "nyc",
@@ -65,11 +86,8 @@ export const BASEMAPS: BasemapDef[] = [
       });
 
       const sources = style.sources as Record<string, unknown>;
-      // One label per neighborhood, on its largest polygon part
-      sources["_nta_bg"] = {
-        type: "geojson",
-        data: await deriveLabelSource(dataUrl("neighborhoods.geojson"), "NTAName3"),
-      };
+      // Filled with viewport-fitted label points by registerBasemapLabels
+      sources[NTA_LABEL_SOURCE] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
       sources["_boroughs_bg"] = {
         type: "geojson",
         data: {
@@ -111,17 +129,17 @@ export const BASEMAPS: BasemapDef[] = [
 
       // Neighborhood (NTA) labels — finer detail at higher zooms
       push({
-        id: "_nta_bg_labels",
+        id: NTA_LABEL_LAYER,
         type: "symbol",
-        source: "_nta_bg",
+        source: NTA_LABEL_SOURCE,
         minzoom: 11,
         layout: {
           "text-field": ["coalesce", ["get", "NTAName3"], ["get", "AltName"], ""],
           "text-font": ["Noto Sans Bold"],
-          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 13, 14, 15, 20],
+          "text-size": zoomStopsExpression(NTA_TEXT_SIZE),
           "text-allow-overlap": false,
           "text-padding": 4,
-          "text-max-width": 8,
+          "text-max-width": NTA_MAX_WIDTH,
           "text-letter-spacing": 0.02,
         },
         paint: {

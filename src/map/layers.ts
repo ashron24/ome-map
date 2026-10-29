@@ -1,7 +1,8 @@
 import type { Map as MlMap, MapGeoJSONFeature } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import type { DistrictDef } from "./districts.ts";
-import { deriveLabelSource } from "./labelSource.ts";
+import { registerDynamicLabels, refreshDynamicLabels, zoomStopsExpression } from "./dynamicLabels.ts";
+import type { ZoomStops } from "./dynamicLabels.ts";
 import { dataUrl } from "../util/url.ts";
 
 let cdWebsitesCache: Record<string, string> | null = null;
@@ -86,8 +87,13 @@ export async function ensureDistrictSource(
   });
 
   const labelSrc = labelSourceId(def.id);
-  const labelData = await deriveLabelSource(def.source);
-  map.addSource(labelSrc, { type: "geojson", data: labelData });
+  map.addSource(labelSrc, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+
+  const small = def.id === "nta" || def.id === "zipcode";
+  const textSize: ZoomStops = small
+    ? [[10, 9], [12, 12], [14, 16]]
+    : [[10, 13], [12, 17], [14, 22]];
+  const maxWidthEms = def.labelMaxWidth ?? 10;
 
   map.addLayer({
     id: labelLayerId(def.id),
@@ -98,17 +104,10 @@ export async function ensureDistrictSource(
         ? ["concat", def.labelPrefix, ["coalesce", ["get", "nameCol"], ""]]
         : ["coalesce", ["get", "nameCol"], ""],
       "text-font": ["Noto Sans Bold"],
-      "text-size": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        10, def.id === "nta" || def.id === "zipcode" ? 9 : 13,
-        12, def.id === "nta" || def.id === "zipcode" ? 12 : 17,
-        14, def.id === "nta" || def.id === "zipcode" ? 16 : 22,
-      ],
+      "text-size": zoomStopsExpression(textSize),
       "text-allow-overlap": false,
       "text-padding": 4,
-      "text-max-width": def.labelMaxWidth ?? 10,
+      "text-max-width": maxWidthEms,
       visibility: "none",
     },
     paint: {
@@ -118,6 +117,17 @@ export async function ensureDistrictSource(
       "text-halo-blur": 0.5,
     },
     minzoom: 10,
+  });
+
+  // Label points follow the viewport — see dynamicLabels.ts
+  await registerDynamicLabels(map, {
+    sourceId: labelSrc,
+    layerId: labelLayerId(def.id),
+    url: def.source,
+    nameKey: "nameCol",
+    text: (p) => (def.labelPrefix ?? "") + ((p?.["nameCol"] as string | undefined) ?? ""),
+    textSize,
+    maxWidthEms,
   });
 
   wireInteractivity(map, def);
@@ -201,6 +211,7 @@ export function setDistrictVisible(
   map.setLayoutProperty(fillLayerId(def.id), "visibility", v);
   map.setLayoutProperty(lineLayerId(def.id), "visibility", v);
   map.setLayoutProperty(labelLayerId(def.id), "visibility", v);
+  if (visible) refreshDynamicLabels(map, labelLayerId(def.id));
 }
 
 function escapeHtml(s: string): string {

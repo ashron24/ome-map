@@ -24,9 +24,13 @@
     "data:all:direct": "npm run data:boundaries:direct && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs && npm run data:cbos && npm run data:dsny && npm run data:food && npm run data:universities && npm run data:cb-websites && npm run data:officials"
   },
   "dependencies": {
-    "maplibre-gl": "^4.7.1"
+    "lineclip": "^2.0.0",
+    "maplibre-gl": "^4.7.1",
+    "polylabel": "^2.1.0"
   },
   "devDependencies": {
+    "@types/lineclip": "^2.0.0",
+    "@types/polylabel": "^2.0.0",
     "tsx": "^4.19.2",
     "typescript": "~6.0.2",
     "vite": "^8.0.12"
