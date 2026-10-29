@@ -27,8 +27,7 @@ type Row = {
 
 function institutionKind(factype: string): string {
   const t = factype.toUpperCase();
-  if (t.startsWith("CUNY")) return "CUNY";
-  if (t.startsWith("SUNY")) return "SUNY";
+  if (t.startsWith("CUNY") || t.startsWith("SUNY")) return "CUNY/SUNY";
   if (t.includes("COMMUNITY COLLEGE") || t.includes("2 YEAR") || t.includes("2-YEAR")) return "Community College";
   return "Private / Other";
 }

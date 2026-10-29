@@ -22,6 +22,7 @@ type Dataset = {
   geometry: "native" | LatLonSpec;
   keepProps?: string[];
   renameProps?: Record<string, string>;
+  transform?: (props: Record<string, unknown>) => void;
   source: { name: string; href: string };
 };
 
@@ -42,8 +43,12 @@ const DATASETS: Dataset[] = [
     label: "Public Schools (K-12)",
     url: facdb("SCHOOLS (K-12)"),
     geometry: { lat: "latitude", lon: "longitude" },
-    keepProps: ["facname", "address", "city", "zipcode", "boro", "optype", "opname", "capacity", "captype"],
-    renameProps: { facname: "name", address: "addr" },
+    keepProps: ["facname", "facsubgrp", "address", "city", "zipcode", "boro", "optype", "opname", "capacity", "captype"],
+    renameProps: { facname: "name", address: "addr", facsubgrp: "subgrp" },
+    transform: (p) => {
+      const s = String(p.subgrp ?? "");
+      p.kind = s.includes("CHARTER") ? "Charter School" : "Public School";
+    },
     source: NYC_DCP,
   },
   {
@@ -60,8 +65,12 @@ const DATASETS: Dataset[] = [
     label: "Hospitals & Clinics",
     url: facdb("HEALTH CARE"),
     geometry: { lat: "latitude", lon: "longitude" },
-    keepProps: ["facname", "facsubgrp", "address", "city", "zipcode", "boro", "opname", "capacity", "captype"],
+    keepProps: ["facname", "facsubgrp", "factype", "address", "city", "zipcode", "boro", "opname", "capacity", "captype"],
     renameProps: { facname: "name", address: "addr", facsubgrp: "type" },
+    transform: (p) => {
+      const ft = String(p.factype ?? "").toUpperCase();
+      p.kind = (ft === "HOSPITAL" || ft === "ACUTE CARE HOSPITAL") ? "Hospital" : "Clinic";
+    },
     source: NYC_DCP,
   },
   {
@@ -80,6 +89,10 @@ const DATASETS: Dataset[] = [
     geometry: { lat: "latitude", lon: "longitude" },
     keepProps: ["facname", "facsubgrp", "address", "boro", "opname", "capacity"],
     renameProps: { facname: "name", address: "addr", facsubgrp: "type" },
+    transform: (p) => {
+      const t = String(p.type ?? "").toUpperCase();
+      p.kind = (t.includes("PRE-KINDERGARTEN") || t.includes("PRESCHOOL")) ? "Pre-K" : "Day Care";
+    },
     source: NYC_DCP,
   },
   {
@@ -212,13 +225,18 @@ async function fetchDataset(ds: Dataset): Promise<{ id: string; count: number; b
     const raw = await res.json();
 
     let features: Feature[];
+    const applyTransform = (props: Record<string, unknown>) => {
+      if (ds.transform) ds.transform(props);
+      return props;
+    };
+
     if (ds.geometry === "native") {
       const fc = raw as FeatureCollection;
       features = (fc.features ?? []).flatMap((f) => {
         if (!f.geometry) return [];
         return [{
           type: "Feature" as const,
-          properties: pickProps(f.properties ?? {}, ds.keepProps, ds.renameProps),
+          properties: applyTransform(pickProps(f.properties ?? {}, ds.keepProps, ds.renameProps)),
           geometry: f.geometry,
         }];
       });
@@ -232,7 +250,7 @@ async function fetchDataset(ds: Dataset): Promise<{ id: string; count: number; b
         if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat === 0 || lon === 0) return [];
         return [{
           type: "Feature" as const,
-          properties: pickProps(row, ds.keepProps, ds.renameProps),
+          properties: applyTransform(pickProps(row, ds.keepProps, ds.renameProps)),
           geometry: buildPoint(lon, lat),
         }];
       });

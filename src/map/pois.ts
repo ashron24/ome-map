@@ -93,9 +93,26 @@ const SBS_LEGEND = [
   { label: "Employment Works", color: "#6A1B9A" },
 ];
 
+const SCHOOL_KIND_COLORS: [string, string][] = [
+  ["Charter School", "#F57F17"],
+  ["Public School", "#1565C0"],
+];
+const SCHOOL_COLOR_EXPR = ["match", ["get", "kind"], ...SCHOOL_KIND_COLORS.flat(), "#888888"];
+
+const HOSPITAL_KIND_COLORS: [string, string][] = [
+  ["Hospital", "#B71C1C"],
+  ["Clinic", "#AD1457"],
+];
+const HOSPITAL_COLOR_EXPR = ["match", ["get", "kind"], ...HOSPITAL_KIND_COLORS.flat(), "#888888"];
+
+const DAYCARE_KIND_COLORS: [string, string][] = [
+  ["Day Care", "#F9A825"],
+  ["Pre-K", "#2E7D32"],
+];
+const DAYCARE_COLOR_EXPR = ["match", ["get", "kind"], ...DAYCARE_KIND_COLORS.flat(), "#888888"];
+
 const UNIVERSITY_KIND_COLORS: [string, string][] = [
-  ["CUNY", "#1565C0"],
-  ["SUNY", "#00838F"],
+  ["CUNY/SUNY", "#C62828"],
   ["Community College", "#558B2F"],
   ["Private / Other", "#6A1B9A"],
 ];
@@ -134,7 +151,9 @@ export const POIS: POIDef[] = [
     group: "facilities",
     source: dataUrl("data/pois/schools-public.geojson"),
     geomType: "point",
-    color: "#1976D2",
+    color: "#888888",
+    colorExpr: SCHOOL_COLOR_EXPR,
+    legend: SCHOOL_KIND_COLORS.map(([label, color]) => ({ label, color })),
     popupFields: [
       { key: "name", label: "School" },
       { key: "addr", label: "Address" },
@@ -167,7 +186,9 @@ export const POIS: POIDef[] = [
     group: "facilities",
     source: dataUrl("data/pois/daycare-prek.geojson"),
     geomType: "point",
-    color: "#FBC02D",
+    color: "#888888",
+    colorExpr: DAYCARE_COLOR_EXPR,
+    legend: DAYCARE_KIND_COLORS.map(([label, color]) => ({ label, color })),
     popupFields: [
       { key: "name", label: "Site" },
       { key: "type", label: "Type" },
@@ -197,7 +218,9 @@ export const POIS: POIDef[] = [
     group: "facilities",
     source: dataUrl("data/pois/hospitals.geojson"),
     geomType: "point",
-    color: "#D32F2F",
+    color: "#888888",
+    colorExpr: HOSPITAL_COLOR_EXPR,
+    legend: HOSPITAL_KIND_COLORS.map(([label, color]) => ({ label, color })),
     popupFields: [
       { key: "name", label: "Facility" },
       { key: "type", label: "Type" },
@@ -454,6 +477,7 @@ const outlineLayer = (id: string) => `poi-${id}-outline`;
 const lineLayer = (id: string) => `poi-${id}-line`;
 const lineLabelLayer = (id: string) => `poi-${id}-line-label`;
 const pointLayer = (id: string) => `poi-${id}-point`;
+const stationLabelLayer = (id: string) => `poi-${id}-station-label`;
 
 // MTA subway line colors by route identifier
 const MTA_LINE_COLOR = [
@@ -480,6 +504,7 @@ function poiLayerIds(def: POIDef): string[] {
         ? [lineLayer(def.id), lineLabelLayer(def.id)]
         : [lineLayer(def.id)];
     case "point":
+      if (def.id === "subway-stations") return [pointLayer(def.id), stationLabelLayer(def.id)];
       return [pointLayer(def.id)];
   }
 }
@@ -599,6 +624,29 @@ export async function ensurePOISource(
     });
     if (def.hollow) {
       try { map.moveLayer(pointLayer(def.id)); } catch (_) {}
+    }
+    if (def.id === "subway-stations") {
+      tryAddLayer({
+        id: stationLabelLayer(def.id),
+        type: "symbol",
+        source: src,
+        minzoom: 14,
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": 11,
+          "text-offset": [0, 1.2],
+          "text-anchor": "top",
+          "text-allow-overlap": false,
+          "text-padding": 3,
+          visibility: "none",
+        },
+        paint: {
+          "text-color": "#003087",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 2,
+        },
+      });
     }
   }
 

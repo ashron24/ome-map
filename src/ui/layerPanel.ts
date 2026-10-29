@@ -239,7 +239,14 @@ function buildPOIList(
   active: Set<string>,
 ): HTMLElement {
   const list = document.createElement("div");
+  const stationsDef = defs.find((d) => d.id === "subway-stations");
+  const linesDef = defs.find((d) => d.id === "subway-lines");
   for (const d of defs) {
+    if (d.id === "subway-lines") continue; // rendered inside combined Subways row
+    if (d.id === "subway-stations" && stationsDef && linesDef) {
+      list.appendChild(buildSubwaysRow(map, active, stationsDef, linesDef));
+      continue;
+    }
     list.appendChild(buildPOIRow(d, map, active));
   }
   return list;
@@ -292,15 +299,18 @@ function buildPOIRow(
   swatch.style.background = def.color;
   swatch.style.color = def.color;
   swatch.style.borderColor = def.color;
+  swatch.style.display = input.checked ? "" : "none";
 
   input.addEventListener("change", async () => {
     if (input.checked) {
       active.add(def.id);
       await ensurePOISource(map, def);
       setPOIVisible(map, def, true);
+      swatch.style.display = "";
     } else {
       active.delete(def.id);
       setPOIVisible(map, def, false);
+      swatch.style.display = "none";
     }
     notifyChange();
   });
@@ -309,6 +319,85 @@ function buildPOIRow(
   row.appendChild(swatch);
   row.appendChild(label);
   return row;
+}
+
+function buildSubwaysRow(
+  map: MlMap,
+  active: Set<string>,
+  stationsDef: POIDef,
+  linesDef: POIDef,
+): HTMLElement {
+  const isActive = active.has("subway-stations") || active.has("subway-lines");
+
+  const row = document.createElement("label");
+  row.className = "layer-row";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = isActive;
+
+  const label = document.createElement("span");
+  label.className = "layer-label";
+  label.textContent = "Subways";
+
+  row.appendChild(input);
+  row.appendChild(label);
+
+  // Sub-legend: line swatch + dot swatch
+  const subLegend = document.createElement("div");
+  subLegend.className = "poi-legend";
+  subLegend.style.display = isActive ? "block" : "none";
+
+  const lineRow = document.createElement("div");
+  lineRow.className = "poi-legend-row";
+  const lineSwatch = document.createElement("span");
+  lineSwatch.className = "swatch line";
+  lineSwatch.style.background = "#0039A6";
+  lineSwatch.style.color = "#0039A6";
+  const lineLabel = document.createElement("span");
+  lineLabel.className = "poi-legend-label";
+  lineLabel.textContent = "Lines";
+  lineRow.appendChild(lineSwatch);
+  lineRow.appendChild(lineLabel);
+
+  const stationRow = document.createElement("div");
+  stationRow.className = "poi-legend-row";
+  const stationSwatch = document.createElement("span");
+  stationSwatch.className = "swatch dot";
+  stationSwatch.style.background = "#888888";
+  stationSwatch.style.borderColor = "#0039A6";
+  const stationLabel = document.createElement("span");
+  stationLabel.className = "poi-legend-label";
+  stationLabel.textContent = "Stations";
+  stationRow.appendChild(stationSwatch);
+  stationRow.appendChild(stationLabel);
+
+  subLegend.appendChild(lineRow);
+  subLegend.appendChild(stationRow);
+
+  input.addEventListener("change", async () => {
+    if (input.checked) {
+      active.add("subway-stations");
+      active.add("subway-lines");
+      await ensurePOISource(map, stationsDef);
+      await ensurePOISource(map, linesDef);
+      setPOIVisible(map, stationsDef, true);
+      setPOIVisible(map, linesDef, true);
+      subLegend.style.display = "block";
+    } else {
+      active.delete("subway-stations");
+      active.delete("subway-lines");
+      setPOIVisible(map, stationsDef, false);
+      setPOIVisible(map, linesDef, false);
+      subLegend.style.display = "none";
+    }
+    notifyChange();
+  });
+
+  const wrapper = document.createElement("div");
+  wrapper.appendChild(row);
+  wrapper.appendChild(subLegend);
+  return wrapper;
 }
 
 function buildPOILegend(items: { label: string; color: string }[]): HTMLElement {
