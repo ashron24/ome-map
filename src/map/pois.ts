@@ -77,9 +77,9 @@ const DYCD_COLOR_EXPR = [
 
 // SBS location type colors
 const SBS_TYPE_COLORS: [string, string][] = [
-  ["Workforce1 Career Center", "#1565C0"],
+  ["Workforce1 Career Center", "#C62828"],
   ["NYC Business Solutions Center", "#2E7D32"],
-  ["NYC Business Solutions Industrial and Transportation", "#E65100"],
+  ["NYC Business Solutions Industrial and Transportation", "#F9A825"],
   ["Employment Works", "#6A1B9A"],
 ];
 
@@ -90,21 +90,6 @@ const SBS_COLOR_EXPR = [
   "#888888",
 ];
 
-// CBO borough colors
-const CBO_BOROUGH_COLORS: [string, string][] = [
-  ["MANHATTAN", "#1565C0"],
-  ["BROOKLYN", "#2E7D32"],
-  ["QUEENS", "#F57C00"],
-  ["BRONX", "#C62828"],
-  ["STATEN ISLAND", "#6A1B9A"],
-];
-
-const CBO_COLOR_EXPR = [
-  "match",
-  ["get", "borough"],
-  ...CBO_BOROUGH_COLORS.flat(),
-  "#888888",
-];
 
 export const POIS: POIDef[] = [
   {
@@ -375,12 +360,7 @@ export const POIS: POIDef[] = [
     group: "services",
     source: dataUrl("data/pois/cbo-sites.geojson"),
     geomType: "point",
-    color: "#888888",
-    colorExpr: CBO_COLOR_EXPR,
-    legend: CBO_BOROUGH_COLORS.map(([label, color]) => ({
-      label: label.charAt(0) + label.slice(1).toLowerCase(),
-      color,
-    })),
+    color: "#F57C00",
     popupFields: [
       { key: "name", label: "Organization" },
       { key: "mission", label: "Mission" },

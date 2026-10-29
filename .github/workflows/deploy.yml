@@ -71,6 +71,7 @@ jobs:
           npm run data:dycd || echo "[deploy] dycd skipped"
           npm run data:sbs || echo "[deploy] sbs skipped"
           npm run data:cbos || echo "[deploy] cbos skipped"
+          npm run data:dsny || echo "[deploy] dsny skipped"
 
       - name: Build site
         env:

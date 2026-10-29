@@ -207,7 +207,7 @@ function buildDistrictRow(
 
   const swatch = document.createElement("span");
   swatch.className = "swatch line" + (def.dash ? " dashed" : "");
-  swatch.style.background = def.dash ? "transparent" : def.color;
+  if (!def.dash) swatch.style.background = def.color;
   swatch.style.color = def.color;
   swatch.style.borderColor = def.color;
 

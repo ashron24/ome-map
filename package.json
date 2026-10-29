@@ -15,6 +15,7 @@
     "data:dycd": "tsx scripts/fetch_dycd.ts",
     "data:sbs": "tsx scripts/fetch_sbs.ts",
     "data:cbos": "tsx scripts/fetch_cbos.ts",
+    "data:dsny": "tsx scripts/fetch_dsny.ts",
     "data:all": "npm run data:boundaries && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs && npm run data:cbos",
     "data:all:direct": "npm run data:boundaries:direct && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs && npm run data:cbos"
   },

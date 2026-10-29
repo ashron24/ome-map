@@ -41,19 +41,8 @@ const NYC_OPEN_DATA = {
 
 export const DISTRICTS: DistrictDef[] = [
   {
-    id: "nta",
-    label: "Neighborhoods (NTAs)",
-    color: "#b8b3b3",
-    labelColor: "#383838",
-    labelMaxWidth: 7,
-    lineWidth: 1.5,
-    group: "core",
-    source: dataUrl("data/boundaries/nta.geojson"),
-    attribution: NYC_DCP_BBL,
-  },
-  {
     id: "cd",
-    label: "Community Districts",
+    label: "Community Boards",
     color: "#000000",
     lineWidth: 3,
     group: "core",
@@ -175,5 +164,16 @@ export const DISTRICTS: DistrictDef[] = [
     group: "core",
     source: dataUrl("data/boundaries/hd.geojson"),
     attribution: NYC_OPEN_DATA,
+  },
+  {
+    id: "nta",
+    label: "Neighborhoods (NTAs)",
+    color: "#b8b3b3",
+    labelColor: "#383838",
+    labelMaxWidth: 7,
+    lineWidth: 1.5,
+    group: "core",
+    source: dataUrl("data/boundaries/nta.geojson"),
+    attribution: NYC_DCP_BBL,
   },
 ];
