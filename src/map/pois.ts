@@ -101,7 +101,7 @@ const SCHOOL_COLOR_EXPR = ["match", ["get", "kind"], ...SCHOOL_KIND_COLORS.flat(
 
 const HOSPITAL_KIND_COLORS: [string, string][] = [
   ["Hospital", "#B71C1C"],
-  ["Clinic", "#AD1457"],
+  ["Clinic", "#0277BD"],
 ];
 const HOSPITAL_COLOR_EXPR = ["match", ["get", "kind"], ...HOSPITAL_KIND_COLORS.flat(), "#888888"];
 
@@ -634,7 +634,7 @@ export async function ensurePOISource(
         layout: {
           "text-field": ["get", "name"],
           "text-font": ["Noto Sans Bold"],
-          "text-size": 11,
+          "text-size": 13,
           "text-offset": [0, 1.2],
           "text-anchor": "top",
           "text-allow-overlap": false,
