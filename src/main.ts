@@ -58,7 +58,7 @@ const map = new MlMap({
   maxZoom: 18,
 });
 
-map.addControl(new NavigationControl({ visualizePitch: false }), "top-right");
+map.addControl(new NavigationControl({ visualizePitch: false }), "bottom-right");
 map.addControl(new ScaleControl({ unit: "imperial" }), "bottom-left");
 
 // Register the subway station icon whenever the style (re)loads.
