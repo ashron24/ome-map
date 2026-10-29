@@ -13,6 +13,26 @@ async function loadCdWebsites(): Promise<Record<string, string>> {
   return cdWebsitesCache ?? {};
 }
 
+type ElectedOfficial = { name: string; title: string; party: string; website: string };
+type CbEntry = { chair_name?: string; chair_website?: string; manager_name?: string; manager_website?: string; meeting?: string; contact?: string };
+type DistrictOfficials = {
+  sa: Record<string, ElectedOfficial>;
+  ss: Record<string, ElectedOfficial>;
+  cc: Record<string, ElectedOfficial>;
+  nycongress: Record<string, ElectedOfficial>;
+  cd: Record<string, CbEntry>;
+};
+
+let officialsCache: DistrictOfficials | null = null;
+async function loadOfficials(): Promise<DistrictOfficials> {
+  if (officialsCache) return officialsCache;
+  try {
+    const res = await fetch(dataUrl("data/district-officials.json"));
+    if (res.ok) officialsCache = await res.json() as DistrictOfficials;
+  } catch { /* non-fatal */ }
+  return officialsCache ?? { sa: {}, ss: {}, cc: {}, nycongress: {}, cd: {} };
+}
+
 const FILL_SUFFIX = "-fill";
 const LINE_SUFFIX = "-line";
 const LABEL_SUFFIX = "-label";
@@ -183,12 +203,37 @@ function wireInteractivity(map: MlMap, def: DistrictDef): void {
     const alt = props.nameAlt ? `<dt>Alt</dt><dd>${escapeHtml(props.nameAlt)}</dd>` : "";
     const attribution = `<a class="attribution-link" href="${def.attribution.href}" target="_blank" rel="noopener">${escapeHtml(def.attribution.name)}</a>`;
 
-    let websiteRow = "";
+    let extraRows = "";
+
     if (def.id === "cd") {
-      const websites = await loadCdWebsites();
-      const url = websites[name];
-      if (url) {
-        websiteRow = `<dt>Website</dt><dd><a class="popup-link" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a></dd>`;
+      const [websites, officials] = await Promise.all([loadCdWebsites(), loadOfficials()]);
+      const cdUrl = websites[name];
+      if (cdUrl) {
+        extraRows += `<dt>Website</dt><dd><a class="popup-link" href="${escapeHtml(cdUrl)}" target="_blank" rel="noopener">${escapeHtml(cdUrl)}</a></dd>`;
+      }
+      const cb = officials.cd[name];
+      if (cb) {
+        if (cb.chair_name) {
+          extraRows += `<dt>Chair</dt><dd>${escapeHtml(cb.chair_name)}`;
+          if (cb.chair_website) extraRows += ` &mdash; <a class="popup-link" href="${escapeHtml(cb.chair_website)}" target="_blank" rel="noopener">website</a>`;
+          extraRows += `</dd>`;
+        }
+        if (cb.manager_name) {
+          extraRows += `<dt>District Manager</dt><dd>${escapeHtml(cb.manager_name)}`;
+          if (cb.manager_website) extraRows += ` &mdash; <a class="popup-link" href="${escapeHtml(cb.manager_website)}" target="_blank" rel="noopener">website</a>`;
+          extraRows += `</dd>`;
+        }
+        if (cb.meeting) extraRows += `<dt>Meeting</dt><dd>${escapeHtml(cb.meeting).replace(/\n/g, "<br>")}</dd>`;
+        if (cb.contact) extraRows += `<dt>Contact</dt><dd>${escapeHtml(cb.contact).replace(/\n/g, "<br>")}</dd>`;
+      }
+    } else if (def.id === "sa" || def.id === "ss" || def.id === "cc" || def.id === "nycongress") {
+      const officials = await loadOfficials();
+      const record = officials[def.id as keyof typeof officials] as Record<string, ElectedOfficial>;
+      const official = record[name];
+      if (official) {
+        extraRows += `<dt>${escapeHtml(official.title)}</dt><dd>${escapeHtml(official.name)}</dd>`;
+        if (official.party) extraRows += `<dt>Party</dt><dd>${escapeHtml(official.party)}</dd>`;
+        if (official.website) extraRows += `<dt>Website</dt><dd><a class="popup-link" href="${escapeHtml(official.website)}" target="_blank" rel="noopener">${escapeHtml(official.website)}</a></dd>`;
       }
     }
 
@@ -197,7 +242,7 @@ function wireInteractivity(map: MlMap, def: DistrictDef): void {
       .setLngLat(e.lngLat)
       .setHTML(
         `<div><strong>${escapeHtml(def.label)}</strong></div>` +
-          `<dl><dt>${escapeHtml(def.labelPrefix?.trim() ?? "Name")}</dt><dd>${escapeHtml(name)}</dd>${alt}${websiteRow}</dl>` +
+          `<dl><dt>${escapeHtml(def.labelPrefix?.trim() ?? "Name")}</dt><dd>${escapeHtml(name)}</dd>${alt}${extraRows}</dl>` +
           `<div style="margin-top:6px;font-size:11px;color:#999;">Source: ${attribution}</div>`,
       )
       .addTo(map);
