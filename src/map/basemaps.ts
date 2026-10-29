@@ -113,7 +113,7 @@ export const BASEMAPS: BasemapDef[] = [
         layout: {
           "text-field": ["coalesce", ["get", "NTAName3"], ["get", "AltName"], ""],
           "text-font": ["Noto Sans Bold"],
-          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 13, 13, 16, 15, 20],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 13, 14, 15, 20],
           "text-allow-overlap": false,
           "text-padding": 4,
           "text-max-width": 8,
