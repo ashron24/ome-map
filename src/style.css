@@ -17,10 +17,10 @@ html, body {
 
 #panel {
   position: absolute;
-  top: 12px;
+  top: 6px;
   left: 4px;
-  width: 280px;
-  max-height: calc(100vh - 24px);
+  width: 255px;
+  max-height: calc(100vh - 18px);
   overflow-y: auto;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
@@ -165,8 +165,8 @@ html, body {
 
 #panel-toggle {
   position: absolute;
-  top: 12px;
-  left: 4px;
+  bottom: 10px;
+  left: 10px;
   z-index: 6;
   display: inline-flex;
   align-items: center;
@@ -200,8 +200,8 @@ html, body {
 @media (max-width: 640px) {
   #panel {
     width: calc(100vw - 24px);
-    max-width: 320px;
-    top: 56px;
+    max-width: 300px;
+    top: 6px;
     left: 4px;
   }
 
@@ -210,6 +210,8 @@ html, body {
   }
 
   #panel-toggle {
+    bottom: 10px;
+    left: 10px;
     padding: 7px 10px;
     font-size: 16px;
   }

@@ -1,7 +1,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./style.css";
 
-import { Map as MlMap, NavigationControl, ScaleControl } from "maplibre-gl";
+import { Map as MlMap, NavigationControl } from "maplibre-gl";
 import {
   BASEMAPS,
   DEFAULT_BASEMAP,
@@ -60,7 +60,6 @@ const map = new MlMap({
 });
 
 map.addControl(new NavigationControl({ visualizePitch: false }), "bottom-right");
-map.addControl(new ScaleControl({ unit: "imperial" }), "bottom-left");
 
 // Register the subway station icon whenever the style (re)loads.
 map.on("style.load", () => {

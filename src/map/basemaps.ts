@@ -168,7 +168,7 @@ export const BASEMAPS: BasemapDef[] = [
   },
 ];
 
-export const DEFAULT_BASEMAP: BasemapId = "openfreemap";
+export const DEFAULT_BASEMAP: BasemapId = "positron-nyc";
 
 // ── style builders ────────────────────────────────────────────────────────────
 
