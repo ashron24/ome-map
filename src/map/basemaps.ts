@@ -74,9 +74,8 @@ export const BASEMAPS: BasemapDef[] = [
         return !sl || KEEP_SOURCE_LAYERS.has(sl);
       });
 
-      const ntaUrl = dataUrl("data/boundaries/nta.geojson");
       const sources = style.sources as Record<string, unknown>;
-      sources["_nta_bg"] = { type: "geojson", data: ntaUrl };
+      sources["_nta_bg"] = { type: "geojson", data: dataUrl("neighborhoods.geojson") };
       sources["_boroughs_bg"] = {
         type: "geojson",
         data: {
@@ -123,7 +122,7 @@ export const BASEMAPS: BasemapDef[] = [
         source: "_nta_bg",
         minzoom: 11,
         layout: {
-          "text-field": ["coalesce", ["get", "nameCol"], ""],
+          "text-field": ["coalesce", ["get", "NTAName3"], ["get", "AltName"], ""],
           "text-font": ["Noto Sans Bold"],
           "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 13, 12, 15, 15],
           "text-allow-overlap": false,
