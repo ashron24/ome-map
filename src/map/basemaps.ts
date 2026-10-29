@@ -19,7 +19,6 @@ type VectorBasemapDef = {
 
 export type BasemapId =
   | "nyc"
-  | "openfreemap"
   | "positron-nyc"
   | "osm"
   | "esri-imagery";
@@ -46,16 +45,6 @@ export const BASEMAPS: BasemapDef[] = [
         dataUrl("subway-stations.geojson"),
         dataUrl("cemeteries.geojson"),
       ),
-  },
-  {
-    id: "openfreemap",
-    label: "Light (OpenFreeMap)",
-    kind: "vector",
-    load: async () => {
-      const resp = await fetch(OPENFREEMAP_STYLE);
-      if (!resp.ok) throw new Error(`OpenFreeMap style ${resp.status}`);
-      return resp.json() as Promise<StyleSpecification>;
-    },
   },
   {
     id: "positron-nyc",
@@ -124,7 +113,7 @@ export const BASEMAPS: BasemapDef[] = [
         layout: {
           "text-field": ["coalesce", ["get", "NTAName3"], ["get", "AltName"], ""],
           "text-font": ["Noto Sans Bold"],
-          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 14, 13, 18, 15, 22],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 11, 13, 13, 16, 15, 20],
           "text-allow-overlap": false,
           "text-padding": 4,
           "text-max-width": 8,

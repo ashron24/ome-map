@@ -101,7 +101,7 @@ export const DISTRICTS: DistrictDef[] = [
   },
   {
     id: "zipcode",
-    label: "ZIP Codes (MODZCTA)",
+    label: "Zipcode",
     color: "#636363",
     labelColor: "#2a2a2a",
     lineWidth: 1.5,
