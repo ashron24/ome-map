@@ -73,6 +73,7 @@ jobs:
           npm run data:cbos || echo "[deploy] cbos skipped"
           npm run data:dsny || echo "[deploy] dsny skipped"
           npm run data:food || echo "[deploy] food skipped"
+          npm run data:universities || echo "[deploy] universities skipped"
 
       - name: Build site
         env:

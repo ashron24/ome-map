@@ -20,7 +20,8 @@ export type POIId =
   | "dycd-sites"
   | "sbs-sites"
   | "cbo-sites"
-  | "food-sites";
+  | "food-sites"
+  | "universities";
 
 export type POIGeomType = "point" | "polygon" | "line";
 
@@ -92,6 +93,20 @@ const SBS_LEGEND = [
   { label: "Employment Works", color: "#6A1B9A" },
 ];
 
+const UNIVERSITY_KIND_COLORS: [string, string][] = [
+  ["CUNY", "#1565C0"],
+  ["SUNY", "#00838F"],
+  ["Community College", "#558B2F"],
+  ["Private / Other", "#6A1B9A"],
+];
+
+const UNIVERSITY_COLOR_EXPR = [
+  "match",
+  ["get", "kind"],
+  ...UNIVERSITY_KIND_COLORS.flat(),
+  "#888888",
+];
+
 const FOOD_TYPE_COLORS: [string, string][] = [
   ["Soup Kitchen", "#E53935"],
   ["Food Pantry", "#43A047"],
@@ -125,6 +140,24 @@ export const POIS: POIDef[] = [
       { key: "addr", label: "Address" },
       { key: "opname", label: "Operator" },
       { key: "capacity", label: "Capacity" },
+    ],
+    attribution: FACDB,
+  },
+  {
+    id: "universities",
+    label: "Colleges & Universities",
+    group: "facilities",
+    source: dataUrl("data/pois/universities.geojson"),
+    geomType: "point",
+    color: "#888888",
+    colorExpr: UNIVERSITY_COLOR_EXPR,
+    legend: UNIVERSITY_KIND_COLORS.map(([label, color]) => ({ label, color })),
+    popupFields: [
+      { key: "name", label: "Institution" },
+      { key: "type", label: "Type" },
+      { key: "address", label: "Address" },
+      { key: "borough", label: "Borough" },
+      { key: "operator", label: "Operator" },
     ],
     attribution: FACDB,
   },
