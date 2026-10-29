@@ -31,6 +31,7 @@ import {
   setHeatmapVisible,
 } from "./map/heatmaps.ts";
 import { mountLayerPanel } from "./ui/layerPanel.ts";
+import { mountSearch } from "./ui/search.ts";
 import {
   debounce,
   parseHash,
@@ -223,6 +224,9 @@ function setupPanelToggle() {
 
 mountPanel();
 setupPanelToggle();
+
+const searchRoot = document.getElementById("search-root");
+if (searchRoot) mountSearch(map, searchRoot);
 
 // applyInitialLayers needs the style to be ready first.
 map.once("style.load", () => void applyInitialLayers());

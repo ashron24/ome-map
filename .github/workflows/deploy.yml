@@ -72,10 +72,11 @@ jobs:
 
       - name: Build site
         env:
-          # GH Pages project sites serve at /<repo>/ — Vite needs `base` set to match.
-          # If you deploy to a user/org site (<user>.github.io) or custom domain at root,
-          # set the repo variable VITE_BASE_PATH=/ instead.
           VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+          # NYC Geoclient API key — get one at https://api-portal.nyc.gov/
+          # Add as a repository secret named VITE_GEOCLIENT_KEY.
+          # Without it, search still works for boroughs, neighborhoods and ZIP codes.
+          VITE_GEOCLIENT_KEY: ${{ secrets.VITE_GEOCLIENT_KEY }}
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
