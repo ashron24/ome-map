@@ -146,7 +146,7 @@ ome-map/
 │   ├── places.json                # local search index
 │   ├── subway-stations.geojson    # basemap station overlay
 │   ├── cemeteries.geojson
-│   ├── fonts/  logo.jpeg  favicon.svg
+│   ├── fonts/  logo.jpeg  favicon.png  apple-touch-icon.png
 ├── scripts/
 │   ├── data/officials.csv         # elected officials + CB contacts (hand-maintained)
 │   ├── build_boundaries.ts        # districts from nyc-geography-crosswalks
