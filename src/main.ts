@@ -1,7 +1,8 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./style.css";
 
-import { Map as MlMap, NavigationControl } from "maplibre-gl";
+import { Map as MlMap, NavigationControl, setWorkerUrl } from "maplibre-gl";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import {
   BASEMAPS,
   DEFAULT_BASEMAP,
@@ -41,6 +42,10 @@ import {
 } from "./state/urlState.ts";
 import type { AppState } from "./state/urlState.ts";
 import { STATION_ICON, stationIcon } from "./map/basemap-style.ts";
+
+// MapLibre 6 locates its worker next to its own module, which Vite moves when
+// bundling; point it at the worker file Vite emits instead.
+setWorkerUrl(maplibreWorkerUrl);
 
 const NYC_CENTER: [number, number] = [-73.9796, 40.7033];
 

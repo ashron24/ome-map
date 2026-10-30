@@ -1,4 +1,4 @@
-import type { Map as MlMap, MapGeoJSONFeature } from "maplibre-gl";
+import type { Map as MlMap, MapGeoJSONFeature, ExpressionSpecification } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import { dataUrl } from "../util/url.ts";
 
@@ -159,7 +159,7 @@ export function setDemographicMetric(
   map.setPaintProperty(FILL_LAYER_ID, "fill-color", colorExpr);
 }
 
-function buildStepExpression(metric: DemographicMetric): unknown {
+function buildStepExpression(metric: DemographicMetric): ExpressionSpecification {
   // step([prop value], colors[0], breaks[0], colors[1], breaks[1], colors[2], ...)
   const expr: unknown[] = [
     "step",
@@ -169,7 +169,7 @@ function buildStepExpression(metric: DemographicMetric): unknown {
   for (let i = 0; i < metric.breaks.length; i++) {
     expr.push(metric.breaks[i], metric.colors[i + 1]);
   }
-  return expr;
+  return expr as ExpressionSpecification;
 }
 
 function wireDemographicsPopup(map: MlMap): void {
