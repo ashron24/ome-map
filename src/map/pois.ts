@@ -37,14 +37,18 @@ export type POIDef = {
   geomType: POIGeomType;
   color: string;
   colorExpr?: unknown;
-  legend?: { label: string; color: string }[];
+  legend?: { label: string; color: string; icon?: string }[];
   hollow?: boolean;
   /** PNG under public/ drawn instead of a dot, on the map and in the menu */
   icon?: string;
   /** Recolor the icon's shape per category, like colorExpr: property value → color */
   iconTint?: { prop: string; colors: [string, string][]; fallback: string };
+  /** A different icon per category instead of `icon`: property value → PNG under public/ */
+  iconByCategory?: { prop: string; icons: [string, string][] };
   /** `icon-size` override; defaults to ICON_SIZE */
   iconSize?: ExpressionSpecification;
+  /** Icon draw order: features with higher values are drawn on top */
+  iconSortKey?: ExpressionSpecification;
   /** Polygon layers: name labels from `minZoom` up (groupBy: extra props that tell same-named areas apart; include: which areas to label at a zoom) */
   labels?: {
     prop: string;
@@ -127,9 +131,15 @@ const SCHOOL_COLOR_EXPR = ["match", ["get", "kind"], ...SCHOOL_KIND_COLORS.flat(
 
 const HOSPITAL_KIND_COLORS: [string, string][] = [
   ["Hospital", "#B71C1C"],
-  ["Clinic", "#0277BD"],
+  ["Clinic", "#B71C1C"],
 ];
 const HOSPITAL_COLOR_EXPR = ["match", ["get", "kind"], ...HOSPITAL_KIND_COLORS.flat(), "#888888"];
+// clinic.png is drawn to match hospital.png (same square, a C instead of an H) in the Clinic
+// color (dark red, to contrast with the indigo hospital icon). Both letters are solid white, not cut out, so stacked icons on hospital campuses stay legible.
+const HOSPITAL_KIND_ICONS: [string, string][] = [
+  ["Hospital", "icons/hospital.png"],
+  ["Clinic", "icons/clinic.png"],
+];
 
 const DAYCARE_KIND_COLORS: [string, string][] = [
   ["Day Care", "#F9A825"],
@@ -252,7 +262,21 @@ export const POIS: POIDef[] = [
     geomType: "point",
     color: "#888888",
     colorExpr: HOSPITAL_COLOR_EXPR,
-    legend: HOSPITAL_KIND_COLORS.map(([label, color]) => ({ label, color })),
+    legend: HOSPITAL_KIND_COLORS.map(([label, color]) => ({
+      label,
+      color,
+      icon: HOSPITAL_KIND_ICONS.find(([kind]) => kind === label)?.[1],
+    })),
+    iconByCategory: { prop: "kind", icons: HOSPITAL_KIND_ICONS },
+    // ~3,000 clinics start small when zoomed out; the 73 hospitals are ~25% larger, on top
+    iconSize: [
+      "interpolate", ["linear"], ["zoom"],
+      10, ["match", ["get", "kind"], "Hospital", 0.85, 0.35],
+      13, ["match", ["get", "kind"], "Hospital", 1.25, 0.75],
+      15, ["match", ["get", "kind"], "Hospital", 1.85, 1.5],
+      18, ["match", ["get", "kind"], "Hospital", 2.75, 2.25],
+    ] as unknown as ExpressionSpecification,
+    iconSortKey: ["match", ["get", "kind"], "Hospital", 1, 0] as unknown as ExpressionSpecification,
     popupFields: [
       { key: "name", label: "Facility" },
       { key: "type", label: "Type" },
@@ -550,8 +574,26 @@ const ICON_CSS_PX = 16;
  * Register a POI layer's icon image(s) and return the `icon-image` value: one
  * image, or with `iconTint` one recolored copy per category plus a fallback.
  */
-async function addPOIIcons(map: MlMap, def: POIDef, icon: string): Promise<string | ExpressionSpecification> {
+async function addPOIIcons(map: MlMap, def: POIDef): Promise<string | ExpressionSpecification> {
   const base = iconImageId(def.id);
+
+  if (def.iconByCategory) {
+    const { prop, icons } = def.iconByCategory;
+    await Promise.all(icons.map(async ([, path], i) => {
+      const id = `${base}-${i}`;
+      if (map.hasImage(id)) return;
+      try {
+        const { data } = await map.loadImage(dataUrl(path));
+        if (!map.hasImage(id)) map.addImage(id, data, { pixelRatio: data.width / ICON_CSS_PX });
+      } catch (err) {
+        console.error(`[pois] icon load failed for ${def.id} (${path}):`, err);
+      }
+    }));
+    // Unlisted categories fall back to the first icon
+    return ["match", ["get", prop], ...icons.flatMap(([value], i) => [value, `${base}-${i}`]), `${base}-0`] as unknown as ExpressionSpecification;
+  }
+
+  const icon = def.icon!;
   const tint = def.iconTint;
   const variants: [string, string | null][] = tint
     ? [...tint.colors.map(([, color], i): [string, string] => [`${base}-${i}`, color]), [`${base}-default`, tint.fallback]]
@@ -737,8 +779,8 @@ export async function ensurePOISource(
         },
       });
     }
-  } else if (def.geomType === "point" && def.icon) {
-    const image = await addPOIIcons(map, def, def.icon);
+  } else if (def.geomType === "point" && (def.icon || def.iconByCategory)) {
+    const image = await addPOIIcons(map, def);
     tryAddLayer({
       id: pointLayer(def.id),
       type: "symbol",
@@ -746,6 +788,7 @@ export async function ensurePOISource(
       layout: {
         "icon-image": image,
         "icon-size": def.iconSize ?? ICON_SIZE,
+        ...(def.iconSortKey ? { "symbol-sort-key": def.iconSortKey } : {}),
         // Behave like the dot layers: never hidden by, or hiding, labels
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
@@ -779,7 +822,7 @@ export async function ensurePOISource(
         id: stationLabelLayer(def.id),
         type: "symbol",
         source: src,
-        minzoom: 14,
+        minzoom: 13.5,
         layout: {
           "text-field": ["get", "name"],
           "text-font": ["Noto Sans Bold"],

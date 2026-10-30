@@ -448,14 +448,20 @@ function buildSubwaysRow(
 }
 
 /** Category legend; with `iconUrl`, each entry shows the icon in its category color. */
-function buildPOILegend(items: { label: string; color: string }[], iconUrl?: string): HTMLElement {
+function buildPOILegend(items: { label: string; color: string; icon?: string }[], iconUrl?: string): HTMLElement {
   const container = document.createElement("div");
   container.className = "poi-legend";
   for (const item of items) {
     const row = document.createElement("div");
     row.className = "poi-legend-row";
-    const dot = document.createElement("span");
-    if (iconUrl) {
+    let dot: HTMLElement = document.createElement("span");
+    if (item.icon) {
+      const img = document.createElement("img");
+      img.src = dataUrl(item.icon);
+      img.alt = "";
+      img.className = "swatch icon";
+      dot = img;
+    } else if (iconUrl) {
       dot.className = "swatch icon-tinted";
       dot.style.setProperty("--icon", `url("${iconUrl}")`);
       dot.style.background = item.color;

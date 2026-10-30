@@ -298,7 +298,7 @@ export function addLandmarkLabels(
 // ── subway stations ───────────────────────────────────────────────────────────
 
 const STATION_ZOOM = 13;
-const STATION_NAME_ZOOM = 14;
+const STATION_NAME_ZOOM = 13.5;
 
 export function addSubwayStations(
   style: StyleSpecification,
