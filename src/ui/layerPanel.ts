@@ -305,11 +305,20 @@ function buildPOIRow(
     return wrapper;
   }
 
-  const swatch = document.createElement("span");
-  swatch.className = "swatch " + swatchClass(def);
-  swatch.style.background = def.color;
-  swatch.style.color = def.color;
-  swatch.style.borderColor = def.color;
+  let swatch: HTMLElement;
+  if (def.icon) {
+    const img = document.createElement("img");
+    img.src = dataUrl(def.icon);
+    img.alt = "";
+    img.className = "swatch icon";
+    swatch = img;
+  } else {
+    swatch = document.createElement("span");
+    swatch.className = "swatch " + swatchClass(def);
+    swatch.style.background = def.color;
+    swatch.style.color = def.color;
+    swatch.style.borderColor = def.color;
+  }
   swatch.style.display = input.checked ? "" : "none";
 
   input.addEventListener("change", async () => {

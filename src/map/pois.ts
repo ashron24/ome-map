@@ -37,6 +37,8 @@ export type POIDef = {
   colorExpr?: unknown;
   legend?: { label: string; color: string }[];
   hollow?: boolean;
+  /** PNG under public/ drawn instead of a dot, on the map and in the menu */
+  icon?: string;
   minZoom?: number;
   popupFields: { key: string; label: string }[];
   attribution: Attribution;
@@ -205,6 +207,7 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/libraries.geojson"),
     geomType: "point",
     color: "#F57C00",
+    icon: "icons/library.png",
     popupFields: [
       { key: "name", label: "Library" },
       { key: "addr", label: "Address" },
@@ -495,6 +498,8 @@ const MTA_LINE_COLOR = [
   "#555555",
 ] as unknown as string;
 
+const iconImageId = (id: string) => `poi-icon-${id}`;
+
 function poiLayerIds(def: POIDef): string[] {
   switch (def.geomType) {
     case "polygon":
@@ -602,6 +607,31 @@ export async function ensurePOISource(
         },
       });
     }
+  } else if (def.geomType === "point" && def.icon) {
+    const image = iconImageId(def.id);
+    if (!map.hasImage(image)) {
+      try {
+        const { data } = await map.loadImage(dataUrl(def.icon));
+        // Icons are 32px PNGs drawn at 16 CSS px, so they stay sharp on retina
+        if (!map.hasImage(image)) map.addImage(image, data, { pixelRatio: 2 });
+      } catch (err) {
+        console.error(`[pois] icon load failed for ${def.id}:`, err);
+      }
+    }
+    tryAddLayer({
+      id: pointLayer(def.id),
+      type: "symbol",
+      source: src,
+      layout: {
+        "icon-image": image,
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.75, 14, 1, 16, 1.25],
+        // Behave like the dot layers: never hidden by, or hiding, labels
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+        visibility: "none",
+      },
+      ...(def.minZoom ? { minzoom: def.minZoom } : {}),
+    });
   } else if (def.geomType === "point") {
     tryAddLayer({
       id: pointLayer(def.id),

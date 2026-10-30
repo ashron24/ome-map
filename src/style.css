@@ -373,6 +373,13 @@ html, body {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
+.swatch.icon {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 0;
+}
+
 .swatch.poly {
   width: 14px;
   height: 12px;
