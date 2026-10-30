@@ -236,6 +236,14 @@ html, body {
   color: #111;
 }
 
+#panel h1 img {
+  display: block;
+  height: 36px;
+  width: auto;
+  max-width: 100%;
+  margin: 4px auto 0;
+}
+
 #panel .subtitle {
   margin: 0 0 12px;
   font-size: 11px;

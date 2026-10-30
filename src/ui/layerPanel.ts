@@ -1,6 +1,7 @@
 import type { Map as MlMap } from "maplibre-gl";
 import { BASEMAPS, DEFAULT_BASEMAP } from "../map/basemaps.ts";
 import type { BasemapId } from "../map/basemaps.ts";
+import { dataUrl } from "../util/url.ts";
 import { DISTRICTS } from "../map/districts.ts";
 import type { DistrictDef } from "../map/districts.ts";
 import {
@@ -55,8 +56,13 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   root.innerHTML = "";
 
+  // Title is Pintazo lettering exported from Canva as SVG (the font itself
+  // isn't licensed for web use). Previous text title used Union Gothic.
   const title = document.createElement("h1");
-  title.textContent = "OME MAP";
+  const titleImg = document.createElement("img");
+  titleImg.src = dataUrl("ome-map-title.svg");
+  titleImg.alt = "OME MAP";
+  title.appendChild(titleImg);
   root.appendChild(title);
 
   const subtitle = document.createElement("p");
