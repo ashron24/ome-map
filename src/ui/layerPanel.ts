@@ -59,19 +59,39 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   // Title is Pintazo lettering exported from Canva as SVG (the font itself
   // isn't licensed for web use). Previous text title used Union Gothic.
   const title = document.createElement("h1");
+  const titleBtn = document.createElement("button");
+  titleBtn.type = "button";
+  titleBtn.className = "panel-title-btn";
+  titleBtn.title = "Show or hide the layer menu";
+  titleBtn.setAttribute("aria-controls", "panel-body");
+  titleBtn.setAttribute("aria-expanded", "true");
   const titleImg = document.createElement("img");
   titleImg.src = dataUrl("ome-map-title.svg");
   titleImg.alt = "OME MAP";
-  title.appendChild(titleImg);
+  titleBtn.appendChild(titleImg);
+  title.appendChild(titleBtn);
   root.appendChild(title);
+
+  // Everything below the title rolls up when the title is clicked
+  const body = document.createElement("div");
+  body.id = "panel-body";
+  body.className = "panel-body";
+  const content = document.createElement("div");
+  content.className = "panel-body-inner";
+  body.appendChild(content);
+  root.appendChild(body);
+  titleBtn.addEventListener("click", () => {
+    const rolled = root.classList.toggle("panel-rolled");
+    titleBtn.setAttribute("aria-expanded", String(!rolled));
+  });
 
   const subtitle = document.createElement("p");
   subtitle.className = "subtitle";
   subtitle.innerHTML =
     "Open-source rebuild of the CAU Outreach Map &mdash; public data only";
-  root.appendChild(subtitle);
+  content.appendChild(subtitle);
 
-  root.appendChild(
+  content.appendChild(
     buildGroup({
       title: "Districts",
       collapsed: true,
@@ -83,7 +103,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
     }),
   );
 
-  root.appendChild(
+  content.appendChild(
     buildGroup({
       title: "Facilities & Infrastructure",
       collapsed: true,
@@ -95,7 +115,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
     }),
   );
 
-  root.appendChild(
+  content.appendChild(
     buildGroup({
       title: "Outreach & Services",
       collapsed: true,
@@ -107,7 +127,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
     }),
   );
 
-  root.appendChild(
+  content.appendChild(
     buildGroup({
       title: "Agency Enforcement",
       collapsed: true,
@@ -116,7 +136,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   );
 
   const hasInitialEthnicity = (deps.initialEthnicities?.size ?? 0) > 0;
-  root.appendChild(
+  content.appendChild(
     buildGroup({
       title: "Demographics",
       collapsed: !deps.initialMetric && !hasInitialEthnicity,
@@ -124,7 +144,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
     }),
   );
 
-  root.appendChild(
+  content.appendChild(
     buildGroup({
       title: "Basemap",
       collapsed: true,
