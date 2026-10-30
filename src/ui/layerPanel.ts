@@ -280,7 +280,7 @@ function buildPOIRow(
   label.textContent = def.label;
 
   if (def.legend) {
-    const legend = buildPOILegend(def.legend);
+    const legend = buildPOILegend(def.legend, def.iconTint && def.icon ? dataUrl(def.icon) : undefined);
     legend.style.display = input.checked ? "block" : "none";
 
     input.addEventListener("change", async () => {
@@ -423,16 +423,23 @@ function buildSubwaysRow(
   return wrapper;
 }
 
-function buildPOILegend(items: { label: string; color: string }[]): HTMLElement {
+/** Category legend; with `iconUrl`, each entry shows the icon in its category color. */
+function buildPOILegend(items: { label: string; color: string }[], iconUrl?: string): HTMLElement {
   const container = document.createElement("div");
   container.className = "poi-legend";
   for (const item of items) {
     const row = document.createElement("div");
     row.className = "poi-legend-row";
     const dot = document.createElement("span");
-    dot.className = "swatch dot";
-    dot.style.background = item.color;
-    dot.style.borderColor = item.color;
+    if (iconUrl) {
+      dot.className = "swatch icon-tinted";
+      dot.style.setProperty("--icon", `url("${iconUrl}")`);
+      dot.style.background = item.color;
+    } else {
+      dot.className = "swatch dot";
+      dot.style.background = item.color;
+      dot.style.borderColor = item.color;
+    }
     const lbl = document.createElement("span");
     lbl.className = "poi-legend-label";
     lbl.textContent = item.label;

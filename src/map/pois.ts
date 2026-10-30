@@ -1,4 +1,4 @@
-import type { Map as MlMap, MapGeoJSONFeature } from "maplibre-gl";
+import type { Map as MlMap, MapGeoJSONFeature, ExpressionSpecification } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import { dataUrl } from "../util/url.ts";
 
@@ -39,6 +39,8 @@ export type POIDef = {
   hollow?: boolean;
   /** PNG under public/ drawn instead of a dot, on the map and in the menu */
   icon?: string;
+  /** Recolor the icon's shape per category, like colorExpr: property value → color */
+  iconTint?: { prop: string; colors: [string, string][]; fallback: string };
   minZoom?: number;
   popupFields: { key: string; label: string }[];
   attribution: Attribution;
@@ -156,6 +158,8 @@ export const POIS: POIDef[] = [
     color: "#888888",
     colorExpr: SCHOOL_COLOR_EXPR,
     legend: SCHOOL_KIND_COLORS.map(([label, color]) => ({ label, color })),
+    icon: "icons/school.png",
+    iconTint: { prop: "kind", colors: SCHOOL_KIND_COLORS, fallback: "#888888" },
     popupFields: [
       { key: "name", label: "School" },
       { key: "addr", label: "Address" },
@@ -173,6 +177,8 @@ export const POIS: POIDef[] = [
     color: "#888888",
     colorExpr: UNIVERSITY_COLOR_EXPR,
     legend: UNIVERSITY_KIND_COLORS.map(([label, color]) => ({ label, color })),
+    icon: "icons/university.png",
+    iconTint: { prop: "kind", colors: UNIVERSITY_KIND_COLORS, fallback: "#888888" },
     popupFields: [
       { key: "name", label: "Institution" },
       { key: "type", label: "Type" },
@@ -361,6 +367,7 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/linknyc.geojson"),
     geomType: "point",
     color: "#00ACC1",
+    icon: "icons/linknyc.png",
     minZoom: 13,
     popupFields: [
       { key: "site_id", label: "Site ID" },
@@ -500,6 +507,54 @@ const MTA_LINE_COLOR = [
 
 const iconImageId = (id: string) => `poi-icon-${id}`;
 
+// Icons draw at 16 CSS px whatever their source size, so higher-res PNGs stay sharp on retina
+const ICON_CSS_PX = 16;
+
+/**
+ * Register a POI layer's icon image(s) and return the `icon-image` value: one
+ * image, or with `iconTint` one recolored copy per category plus a fallback.
+ */
+async function addPOIIcons(map: MlMap, def: POIDef, icon: string): Promise<string | ExpressionSpecification> {
+  const base = iconImageId(def.id);
+  const tint = def.iconTint;
+  const variants: [string, string | null][] = tint
+    ? [...tint.colors.map(([, color], i): [string, string] => [`${base}-${i}`, color]), [`${base}-default`, tint.fallback]]
+    : [[base, null]];
+
+  if (!variants.every(([id]) => map.hasImage(id))) {
+    try {
+      const { data } = await map.loadImage(dataUrl(icon));
+      for (const [id, color] of variants) {
+        if (map.hasImage(id)) continue;
+        map.addImage(id, color ? tintImage(data, color) : data, { pixelRatio: data.width / ICON_CSS_PX });
+      }
+    } catch (err) {
+      console.error(`[pois] icon load failed for ${def.id}:`, err);
+    }
+  }
+
+  if (!tint) return base;
+  return [
+    "match",
+    ["get", tint.prop],
+    ...tint.colors.flatMap(([value], i) => [value, `${base}-${i}`]),
+    `${base}-default`,
+  ] as unknown as ExpressionSpecification;
+}
+
+/** Fill an icon's opaque shape with one color, keeping its alpha (anti-aliased edges, holes). */
+function tintImage(img: HTMLImageElement | ImageBitmap, color: string): ImageData {
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
 function poiLayerIds(def: POIDef): string[] {
   switch (def.geomType) {
     case "polygon":
@@ -608,16 +663,7 @@ export async function ensurePOISource(
       });
     }
   } else if (def.geomType === "point" && def.icon) {
-    const image = iconImageId(def.id);
-    if (!map.hasImage(image)) {
-      try {
-        const { data } = await map.loadImage(dataUrl(def.icon));
-        // Icons are 32px PNGs drawn at 16 CSS px, so they stay sharp on retina
-        if (!map.hasImage(image)) map.addImage(image, data, { pixelRatio: 2 });
-      } catch (err) {
-        console.error(`[pois] icon load failed for ${def.id}:`, err);
-      }
-    }
+    const image = await addPOIIcons(map, def, def.icon);
     tryAddLayer({
       id: pointLayer(def.id),
       type: "symbol",

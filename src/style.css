@@ -380,6 +380,16 @@ html, body {
   border-radius: 0;
 }
 
+/* Icon shape filled with the element's background color */
+.swatch.icon-tinted {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 0;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+
 .swatch.poly {
   width: 14px;
   height: 12px;
