@@ -510,6 +510,14 @@ const iconImageId = (id: string) => `poi-icon-${id}`;
 // Icons draw at 16 CSS px whatever their source size, so higher-res PNGs stay sharp on retina
 const ICON_CSS_PX = 16;
 
+// Point symbols grow as you zoom in, all the way to max zoom (18)
+const ICON_SIZE: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 0.7, 13, 1, 15, 1.5, 18, 2.25]; // ≈11 → 36 px
+const DOT_RADIUS: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 15, 8, 18, 13];
+const HOLLOW_DOT_RADIUS: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 15, 7, 18, 11];
+
 /**
  * Register a POI layer's icon image(s) and return the `icon-image` value: one
  * image, or with `iconTint` one recolored copy per category plus a fallback.
@@ -670,7 +678,7 @@ export async function ensurePOISource(
       source: src,
       layout: {
         "icon-image": image,
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.75, 14, 1, 16, 1.25],
+        "icon-size": ICON_SIZE,
         // Behave like the dot layers: never hidden by, or hiding, labels
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
@@ -687,9 +695,7 @@ export async function ensurePOISource(
         "circle-color": def.colorExpr !== undefined
           ? def.colorExpr as unknown as string
           : def.hollow ? "#888888" : def.color,
-        "circle-radius": def.hollow
-          ? ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 16, 8]
-          : ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 6, 16, 9],
+        "circle-radius": def.hollow ? HOLLOW_DOT_RADIUS : DOT_RADIUS,
         "circle-opacity": def.hollow ? 0.5 : 0.9,
         "circle-stroke-width": def.hollow ? 1.5 : 1,
         "circle-stroke-color": def.hollow ? def.color : "#ffffff",
