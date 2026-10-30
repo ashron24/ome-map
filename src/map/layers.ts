@@ -16,7 +16,7 @@ async function loadCdWebsites(): Promise<Record<string, string>> {
 }
 
 type ElectedOfficial = { name: string; title: string; party: string; website: string };
-type CbEntry = { chair_name?: string; chair_website?: string; manager_name?: string; manager_website?: string; meeting?: string; contact?: string };
+type CbEntry = { chair_name?: string; manager_name?: string; meeting?: string; contact?: string };
 type DistrictOfficials = {
   sa: Record<string, ElectedOfficial>;
   ss: Record<string, ElectedOfficial>;
@@ -165,16 +165,8 @@ function wireInteractivity(map: MlMap, def: DistrictDef): void {
       }
       const cb = officials.cd[name];
       if (cb) {
-        if (cb.chair_name) {
-          extraRows += `<dt>Chair</dt><dd>${escapeHtml(cb.chair_name)}`;
-          if (cb.chair_website) extraRows += ` &mdash; <a class="popup-link" href="${escapeHtml(cb.chair_website)}" target="_blank" rel="noopener">website</a>`;
-          extraRows += `</dd>`;
-        }
-        if (cb.manager_name) {
-          extraRows += `<dt>District Manager</dt><dd>${escapeHtml(cb.manager_name)}`;
-          if (cb.manager_website) extraRows += ` &mdash; <a class="popup-link" href="${escapeHtml(cb.manager_website)}" target="_blank" rel="noopener">website</a>`;
-          extraRows += `</dd>`;
-        }
+        if (cb.chair_name) extraRows += `<dt>Chair</dt><dd>${escapeHtml(cb.chair_name)}</dd>`;
+        if (cb.manager_name) extraRows += `<dt>District Manager</dt><dd>${escapeHtml(cb.manager_name)}</dd>`;
         if (cb.meeting) extraRows += `<dt>Meeting</dt><dd>${escapeHtml(cb.meeting).replace(/\n/g, "<br>")}</dd>`;
         if (cb.contact) extraRows += `<dt>Contact</dt><dd>${escapeHtml(cb.contact).replace(/\n/g, "<br>")}</dd>`;
       }
