@@ -20,10 +20,13 @@ The original map ran on Leaflet + CartoDB. CartoDB has been sunset and the origi
 
 Other features:
 
-- **District popups** show elected officials for council / state / congressional districts, and Community Board contact info, meeting details and website links (from `scripts/data/officials.csv` plus NYC Open Data).
+- **Layer menu** — click the **OME MAP** title to roll the menu up to a title bar and click again to roll it back down. On phones (≤ 640 px wide) the menu starts rolled up.
+- **Point icons** — Libraries, Public Schools, Colleges & Universities and LinkNYC Kiosks use icons instead of dots; school and college icons are recolored per category (e.g. Public vs. Charter School). All icons and dots keep growing as you zoom in, and dense layers (schools, LinkNYC) start extra small when zoomed out.
+- **Polygon labels follow the view** — each district and neighborhood is labelled once, and when only part of an area is on screen its label moves into the visible part if it fits there (see `src/map/dynamicLabels.ts`).
+- **District popups** show elected officials for council / state / congressional districts, and Community Board contact info, meeting details and a website link (from `scripts/data/officials.csv` plus NYC Open Data).
 - **Search** (top right) matches neighborhoods, boroughs and ZIP codes locally; full address search uses NYC Geoclient when a key is configured.
-- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL.
-- **Multi-layer legend** for active POI layers, and a legend for the active choropleth.
+- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
+- **Legends** — category legends (with the tinted icon or color dot) under active POI layers, and a legend for the active choropleth.
 
 ## What's intentionally NOT included
 
@@ -38,7 +41,7 @@ If you need the private-layer functionality from the legacy map, that work belon
 
 ## Stack
 
-- **MapLibre GL JS** — vector/raster renderer (open-source fork of Mapbox GL)
+- **MapLibre GL JS 6** — vector/raster renderer (open-source fork of Mapbox GL). MapLibre 6 is ESM-only and finds its web worker relative to its own module, which Vite relocates when bundling; `src/main.ts` therefore calls `setWorkerUrl()` with the worker file Vite emits. Without it the map renders blank (`Worker failed to load` in the console).
 - **Vite + TypeScript** — vanilla, no framework
 - **Static deploy** to GitHub Pages
 - **Build-time ETL** in TypeScript fetches data from NYC Open Data and the Census Bureau and writes static GeoJSON/JSON to `public/data/` (gitignored — reproducible from the ETL)
@@ -65,6 +68,8 @@ npm run data:all
 npm run dev
 # → http://localhost:5173/
 ```
+
+If a layer looks empty or a popup is missing details locally, your `public/data/` is probably stale or incomplete — re-run the relevant `npm run data:*` command (`data:census` needs `CENSUS_API_KEY` set and exits with an error without it).
 
 The boundaries ETL (`data:boundaries`) reads from a local checkout of `nyc-geography-crosswalks` at `./nyc-geography-crosswalks/outputs/` (or `$CROSSWALKS_OUTPUTS`). If you don't have one, use `npm run data:all:direct`, which pulls boundaries from NYC Planning's ArcGIS REST API instead.
 
@@ -97,6 +102,23 @@ Caveats worth knowing:
 - The legacy map's **Median Income-to-Rent ratio** choropleth is not yet reproduced (it would come from ACS B25071).
 - Elected officials and CB info come from a hand-maintained CSV (`scripts/data/officials.csv`) — update it after elections or board changes.
 
+## Customizing
+
+### Point icons
+
+Point layers are defined in `POIS` in `src/map/pois.ts`. To draw a layer with an icon instead of a dot:
+
+1. Put a PNG in `public/icons/` (a single-color shape on a transparent background works best; any resolution — icons are drawn at 16 CSS px at zoom ~13 and scale with zoom).
+2. On the layer's definition set `icon: "icons/<file>.png"`. The same image is used as the layer's swatch in the menu.
+3. Optional: `iconTint: { prop, colors, fallback }` fills the icon's shape with a color per category (the same `[value, color]` pairs used for the layer's legend), so one PNG serves every category.
+4. Optional: `iconSize: SMALL_START_ICON_SIZE` for dense layers, so icons start small when zoomed out.
+
+Icon and dot sizes per zoom level are the `ICON_SIZE`, `SMALL_START_ICON_SIZE`, `DOT_RADIUS` and `HOLLOW_DOT_RADIUS` constants near the top of `pois.ts`.
+
+### Title
+
+The **OME MAP** title is an SVG (`public/ome-map-title.svg`) exported from Canva in the Pintazo typeface, which isn't licensed for web embedding as a font. To change it, export a new SVG and replace the file. The previous text title (Union Gothic, `public/fonts/union_gothic-variable.ttf`) is still styled by `#panel h1` in `src/style.css`; to switch back, set the title's text in `mountLayerPanel` (`src/ui/layerPanel.ts`) instead of inserting the image.
+
 ## Deploy to GitHub Pages
 
 `.github/workflows/deploy.yml` builds and publishes the site on every push to `main`. It clones `nyc-geography-crosswalks` (and downloads its latest `all_boundaries.geojson` release asset), runs every ETL — each one is allowed to fail without blocking the deploy — then `vite build`, then deploys `dist/` to GitHub Pages.
@@ -118,6 +140,8 @@ mome-map/
 ├── package.json
 ├── public/
 │   ├── data/                      # gitignored — populated by ETL
+│   ├── icons/                     # point-layer icons (PNG)
+│   ├── ome-map-title.svg          # panel title lettering
 │   ├── neighborhoods.geojson      # custom neighborhood labels
 │   ├── places.json                # local search index
 │   ├── subway-stations.geojson    # basemap station overlay
@@ -135,7 +159,7 @@ mome-map/
 │   ├── fetch_cb_websites.ts       # Community Board websites
 │   └── process_officials.ts       # officials.csv → district-officials.json
 └── src/
-    ├── main.ts                    # entry, map init, URL state
+    ├── main.ts                    # entry, map init, opening view, URL state
     ├── style.css
     ├── map/
     │   ├── basemaps.ts            # basemap defs
@@ -143,14 +167,15 @@ mome-map/
     │   ├── basemap-style.ts       # shared basemap styling (labels, tint, city line)
     │   ├── districts.ts           # district overlay defs
     │   ├── layers.ts              # district layer add/show/popup
-    │   ├── pois.ts                # POI defs + render
+    │   ├── dynamicLabels.ts       # viewport-aware polygon labels (districts + basemap neighborhoods)
+    │   ├── pois.ts                # POI defs + render (dots, icons, tinting, sizes)
     │   ├── heatmaps.ts            # enforcement heatmap defs + render
     │   ├── demographics.ts        # choropleth metric defs + render
     │   ├── ethnicityLayers.ts     # graduated-symbol ethnicity layers
     │   ├── geocode.ts             # NYC Geoclient client
     │   └── places.ts              # local place matcher for search
     ├── ui/
-    │   ├── layerPanel.ts          # left-side layer control panel
+    │   ├── layerPanel.ts          # left-side layer menu (title roll-up, legends)
     │   └── search.ts              # search box
     ├── state/
     │   └── urlState.ts            # permalink (#-fragment) encoding/decoding
