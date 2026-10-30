@@ -1,8 +1,8 @@
-# mome-map
+# ome-map
 
 An open-source rebuild of the legacy **CAU Outreach Map** (NYC Mayor's Community Affairs Unit, 2015–2018) using only **public** data and **open-source** tools — no authentication, no internal-only layers.
 
-**Live:** https://ashron24.github.io/mome-map/
+**Live:** https://ashron24.github.io/ome-map/
 
 The original map ran on Leaflet + CartoDB. CartoDB has been sunset and the original layers (clergy contacts, internal program targeting, staff geographies) were intentionally never republished. This project recreates the **public-data subset** of that map on a modern stack so the spatial-analysis value of the original is preserved without exposing anything that was private.
 
@@ -49,8 +49,8 @@ If you need the private-layer functionality from the legacy map, that work belon
 ## Quickstart
 
 ```bash
-git clone https://github.com/ashron24/mome-map.git
-cd mome-map
+git clone https://github.com/ashron24/ome-map.git
+cd ome-map
 npm install
 
 # Census Bureau API key (free) — required for the Demographics layers
@@ -135,7 +135,7 @@ Open-data source URLs are stable but can move — if an ETL starts failing, chec
 ## Repository layout
 
 ```
-mome-map/
+ome-map/
 ├── index.html                     # Vite entry
 ├── package.json
 ├── public/
