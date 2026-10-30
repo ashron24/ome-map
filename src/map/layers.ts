@@ -89,7 +89,7 @@ export async function ensureDistrictSource(
   const labelSrc = labelSourceId(def.id);
   map.addSource(labelSrc, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
 
-  const small = def.id === "nta" || def.id === "zipcode";
+  const small = def.smallLabels || def.id === "nta" || def.id === "zipcode";
   const textSize: ZoomStops = small
     ? [[10, 9], [12, 12], [14, 16]]
     : [[10, 13], [12, 17], [14, 22]];

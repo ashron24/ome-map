@@ -25,6 +25,8 @@ export type DistrictDef = {
   lineWidth: number;
   dash?: [number, number];
   labelPrefix?: string;
+  /** Smaller labels, for layers with many small areas */
+  smallLabels?: boolean;
   group: "core" | "extra";
   source: string;
   attribution: { name: string; href: string };
@@ -122,6 +124,7 @@ export const DISTRICTS: DistrictDef[] = [
     id: "fb",
     label: "Fire Battalion",
     color: "#e6550d",
+    labelPrefix: "FB ",
     lineWidth: 2.5,
     group: "core",
     source: dataUrl("data/boundaries/fb.geojson"),
@@ -141,6 +144,7 @@ export const DISTRICTS: DistrictDef[] = [
     label: "BIDs",
     color: "#9467bd",
     lineWidth: 2.5,
+    smallLabels: true,
     group: "core",
     source: dataUrl("data/boundaries/bid.geojson"),
     attribution: NYC_OPEN_DATA,
@@ -150,6 +154,7 @@ export const DISTRICTS: DistrictDef[] = [
     label: "Historic District",
     color: "#bcbd22",
     lineWidth: 2.5,
+    smallLabels: true,
     group: "core",
     source: dataUrl("data/boundaries/hd.geojson"),
     attribution: NYC_OPEN_DATA,

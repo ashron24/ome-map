@@ -45,6 +45,8 @@ export type POIDef = {
   iconTint?: { prop: string; colors: [string, string][]; fallback: string };
   /** A different icon per category instead of `icon`: property value → PNG under public/ */
   iconByCategory?: { prop: string; icons: [string, string][] };
+  /** Which part of the icon sits on the point, e.g. "bottom" for map pins; defaults to center */
+  iconAnchor?: "center" | "bottom";
   /** `icon-size` override; defaults to ICON_SIZE */
   iconSize?: ExpressionSpecification;
   /** Icon draw order: features with higher values are drawn on top */
@@ -162,7 +164,7 @@ const UNIVERSITY_COLOR_EXPR = [
 
 const FOOD_TYPE_COLORS: [string, string][] = [
   ["Soup Kitchen", "#E53935"],
-  ["Food Pantry", "#43A047"],
+  ["Food Pantry", "#0058D3"],
 ];
 
 const FOOD_COLOR_EXPR = [
@@ -170,6 +172,11 @@ const FOOD_COLOR_EXPR = [
   ["get", "type"],
   ...FOOD_TYPE_COLORS.flat(),
   "#888888",
+];
+
+const FOOD_TYPE_ICONS: [string, string][] = [
+  ["Soup Kitchen", "icons/soup-kitchen.png"],
+  ["Food Pantry", "icons/food-pantry.png"],
 ];
 
 const SBS_COLOR_EXPR = [
@@ -482,6 +489,10 @@ export const POIS: POIDef[] = [
     color: "#888888",
     colorExpr: SBS_COLOR_EXPR,
     legend: SBS_LEGEND,
+    // One map pin, tinted per location type
+    icon: "icons/pin.png",
+    iconTint: { prop: "location_type", colors: SBS_TYPE_COLORS, fallback: "#888888" },
+    iconAnchor: "bottom",
     popupFields: [
       { key: "name", label: "Site" },
       { key: "location_type", label: "Type" },
@@ -524,7 +535,22 @@ export const POIS: POIDef[] = [
     geomType: "point",
     color: "#888888",
     colorExpr: FOOD_COLOR_EXPR,
-    legend: FOOD_TYPE_COLORS.map(([label, color]) => ({ label, color })),
+    legend: FOOD_TYPE_COLORS.map(([label, color]) => ({
+      label,
+      color,
+      icon: FOOD_TYPE_ICONS.find(([type]) => type === label)?.[1],
+    })),
+    iconByCategory: { prop: "type", icons: FOOD_TYPE_ICONS },
+    // The thin ladle is ~40% larger than the cart and drawn on top, so the 88 soup
+    // kitchens stand out among ~500 pantries
+    iconSize: [
+      "interpolate", ["linear"], ["zoom"],
+      10, ["match", ["get", "type"], "Soup Kitchen", 1, 0.7],
+      13, ["match", ["get", "type"], "Soup Kitchen", 1.4, 1],
+      15, ["match", ["get", "type"], "Soup Kitchen", 2.1, 1.5],
+      18, ["match", ["get", "type"], "Soup Kitchen", 3.15, 2.25],
+    ] as unknown as ExpressionSpecification,
+    iconSortKey: ["match", ["get", "type"], "Soup Kitchen", 1, 0] as unknown as ExpressionSpecification,
     popupFields: [
       { key: "name", label: "Site" },
       { key: "type", label: "Type" },
@@ -788,6 +814,7 @@ export async function ensurePOISource(
       layout: {
         "icon-image": image,
         "icon-size": def.iconSize ?? ICON_SIZE,
+        ...(def.iconAnchor ? { "icon-anchor": def.iconAnchor } : {}),
         ...(def.iconSortKey ? { "symbol-sort-key": def.iconSortKey } : {}),
         // Behave like the dot layers: never hidden by, or hiding, labels
         "icon-allow-overlap": true,
