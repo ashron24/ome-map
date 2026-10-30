@@ -41,6 +41,8 @@ export type DynamicLabelOptions = {
   url: string;
   /** Property that names an area; parts sharing a name get one label */
   nameKey: string;
+  /** Extra properties that, with nameKey, identify one area when names repeat */
+  groupBy?: string[];
   /** The label string, matching the layer's text-field */
   text: (props: GeoJSON.GeoJsonProperties) => string;
   /** text-size stops, matching the layer's text-size */
@@ -108,7 +110,7 @@ function setsFor(map: MlMap): Map<string, LabelSet> {
 const areaCache = new Map<string, Promise<Area[]>>();
 
 function loadAreas(opts: DynamicLabelOptions): Promise<Area[]> {
-  const key = `${opts.url}|${opts.nameKey}`;
+  const key = `${opts.url}|${[opts.nameKey, ...(opts.groupBy ?? [])].join(",")}`;
   let p = areaCache.get(key);
   if (!p) {
     p = fetch(opts.url)
@@ -126,6 +128,7 @@ function buildAreas(fc: GeoJSON.FeatureCollection, opts: DynamicLabelOptions): A
     const geom = f.geometry as GeoJSON.Geometry | null;
     const name = f.properties?.[opts.nameKey] as string | null | undefined;
     if (!geom || !name) continue;
+    const key = [name, ...(opts.groupBy ?? []).map((k) => f.properties?.[k] ?? "")].join("|");
 
     const polys =
       geom.type === "Polygon" ? [geom.coordinates] :
@@ -133,10 +136,10 @@ function buildAreas(fc: GeoJSON.FeatureCollection, opts: DynamicLabelOptions): A
       [];
     if (!polys.length) continue;
 
-    let area = byName.get(name);
+    let area = byName.get(key);
     if (!area) {
       area = { props: f.properties, text: opts.text(f.properties), parts: [] };
-      byName.set(name, area);
+      byName.set(key, area);
     }
     for (const poly of polys) {
       const rings = poly.map((ring) => ring.map(([lng, lat]) => toMercator(lng, lat)));

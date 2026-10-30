@@ -48,7 +48,7 @@ import { STATION_ICON, stationIcon } from "./map/basemap-style.ts";
 setWorkerUrl(maplibreWorkerUrl);
 
 // Opening view: all five boroughs
-const NYC_CENTER: [number, number] = [-73.8980, 40.7013];
+const NYC_CENTER: [number, number] = [-73.9796, 40.7033];
 const NYC_ZOOM = 10.17;
 
 const initialState = parseHash(window.location.hash);

@@ -1,6 +1,8 @@
 import type { Map as MlMap, MapGeoJSONFeature, ExpressionSpecification } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import { dataUrl } from "../util/url.ts";
+import { registerDynamicLabels, refreshDynamicLabels, zoomStopsExpression } from "./dynamicLabels.ts";
+import type { ZoomStops } from "./dynamicLabels.ts";
 
 export type POIId =
   | "schools-public"
@@ -43,6 +45,8 @@ export type POIDef = {
   iconTint?: { prop: string; colors: [string, string][]; fallback: string };
   /** `icon-size` override; defaults to ICON_SIZE */
   iconSize?: ExpressionSpecification;
+  /** Polygon layers: name labels from `minZoom` up (groupBy: extra props that tell same-named areas apart) */
+  labels?: { prop: string; groupBy?: string[]; minZoom: number };
   minZoom?: number;
   popupFields: { key: string; label: string }[];
   attribution: Attribution;
@@ -275,6 +279,8 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/parks.geojson"),
     geomType: "polygon",
     color: "#388E3C",
+    // 123 parks are just named "Park", so location tells them apart
+    labels: { prop: "name", groupBy: ["location"], minZoom: 13 },
     popupFields: [
       { key: "name", label: "Park" },
       { key: "type", label: "Type" },
@@ -501,6 +507,11 @@ const lineLayer = (id: string) => `poi-${id}-line`;
 const lineLabelLayer = (id: string) => `poi-${id}-line-label`;
 const pointLayer = (id: string) => `poi-${id}-point`;
 const stationLabelLayer = (id: string) => `poi-${id}-station-label`;
+const polyLabelLayer = (id: string) => `poi-${id}-label`;
+const polyLabelSource = (id: string) => `poi-${id}-labels`;
+
+const POLY_LABEL_SIZE: ZoomStops = [[13, 11], [15, 13], [18, 16]];
+const POLY_LABEL_MAX_WIDTH = 8;
 
 // MTA subway line colors by route identifier
 const MTA_LINE_COLOR = [
@@ -571,7 +582,9 @@ function tintImage(img: HTMLImageElement | ImageBitmap, color: string): ImageDat
 function poiLayerIds(def: POIDef): string[] {
   switch (def.geomType) {
     case "polygon":
-      return [fillLayer(def.id), outlineLayer(def.id)];
+      return def.labels
+        ? [fillLayer(def.id), outlineLayer(def.id), polyLabelLayer(def.id)]
+        : [fillLayer(def.id), outlineLayer(def.id)];
     case "line":
       return def.id === "subway-lines"
         ? [lineLayer(def.id), lineLabelLayer(def.id)]
@@ -630,6 +643,42 @@ export async function ensurePOISource(
       },
       layout: { visibility: "none" },
     });
+    if (def.labels) {
+      const labels = def.labels;
+      map.addSource(polyLabelSource(def.id), { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      tryAddLayer({
+        id: polyLabelLayer(def.id),
+        type: "symbol",
+        source: polyLabelSource(def.id),
+        minzoom: labels.minZoom,
+        layout: {
+          "text-field": ["coalesce", ["get", labels.prop], ""],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": zoomStopsExpression(POLY_LABEL_SIZE),
+          "text-max-width": POLY_LABEL_MAX_WIDTH,
+          "text-padding": 3,
+          "text-variable-anchor": ["center", "top", "bottom", "left", "right"],
+          "text-radial-offset": 0.6,
+          visibility: "none",
+        },
+        paint: {
+          "text-color": "#1B5E20",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.5,
+        },
+      });
+      // One label per park, placed in its visible part — see dynamicLabels.ts
+      await registerDynamicLabels(map, {
+        sourceId: polyLabelSource(def.id),
+        layerId: polyLabelLayer(def.id),
+        url: def.source,
+        nameKey: labels.prop,
+        groupBy: labels.groupBy,
+        text: (p) => String(p?.[labels.prop] ?? ""),
+        textSize: POLY_LABEL_SIZE,
+        maxWidthEms: POLY_LABEL_MAX_WIDTH,
+      });
+    }
   } else if (def.geomType === "line") {
     const isSubway = def.id === "subway-lines";
     tryAddLayer({
@@ -796,6 +845,7 @@ export function setPOIVisible(
   for (const id of poiLayerIds(def)) {
     if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", v);
   }
+  if (visible && def.labels) refreshDynamicLabels(map, polyLabelLayer(def.id));
 }
 
 function isUrl(s: string): boolean {
