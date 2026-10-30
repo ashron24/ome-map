@@ -21,12 +21,22 @@ The original map ran on Leaflet + CartoDB. CartoDB has been sunset and the origi
 Other features:
 
 - **Layer menu** — click the **OME MAP** title to roll the menu up to a title bar and click again to roll it back down. On phones (≤ 640 px wide) the menu starts rolled up.
-- **Point icons** — Libraries, Public Schools, Colleges & Universities and LinkNYC Kiosks use icons instead of dots; school and college icons are recolored per category (e.g. Public vs. Charter School). All icons and dots keep growing as you zoom in, and dense layers (schools, LinkNYC) start extra small when zoomed out.
-- **Polygon labels follow the view** — each district and neighborhood is labelled once, and when only part of an area is on screen its label moves into the visible part if it fits there (see `src/map/dynamicLabels.ts`).
+- **Point icons** — several layers use icons instead of dots:
+  - Libraries (book) and LinkNYC Kiosks (Wi-Fi)
+  - Public Schools and Colleges & Universities, recolored per category (e.g. Public vs. Charter School)
+  - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
+  - SBS Program Sites: a map pin in each location type's color, with the pin's tip on the site
+  - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
+
+  All icons and dots keep growing as you zoom in, and dense layers (schools, clinics, LinkNYC) start extra small when zoomed out.
+- **Polygon labels follow the view** — each district and neighborhood is labelled once, and when only part of an area is on screen its label moves into the visible part if it fits there. Labels also stay out from under the layer menu (see `src/map/dynamicLabels.ts`). District labels carry a short prefix where the name is just a number (CC, SS, AD, CG, PP, SD, FB); BIDs, Historic Districts, neighborhoods and ZIP codes use smaller labels.
+- **Park labels** — parks of 5+ acres are labelled from zoom 13 and all parks from zoom 14.5; parcels named just "Park" (mostly road medians) are never labelled.
+- **Subway station names** appear from zoom 13.5.
 - **District popups** show elected officials for council / state / congressional districts, and Community Board contact info, meeting details and a website link (from `scripts/data/officials.csv` plus NYC Open Data).
 - **Search** (top right) matches neighborhoods, boroughs and ZIP codes locally; full address search uses NYC Geoclient when a key is configured.
 - **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
-- **Legends** — category legends (with the tinted icon or color dot) under active POI layers, and a legend for the active choropleth.
+- **Legends** — category legends (with the icon or color dot) under active POI layers, and a legend for the active choropleth.
+- **Logo and browser tab** — the logo (top right) links to the Mayor's Office of Mass Engagement site (`index.html`), and is also the browser-tab icon (`public/favicon.png`, `public/apple-touch-icon.png`) next to the "OME Map" page title.
 
 ## What's intentionally NOT included
 
@@ -111,9 +121,14 @@ Point layers are defined in `POIS` in `src/map/pois.ts`. To draw a layer with an
 1. Put a PNG in `public/icons/` (a single-color shape on a transparent background works best; any resolution — icons are drawn at 16 CSS px at zoom ~13 and scale with zoom).
 2. On the layer's definition set `icon: "icons/<file>.png"`. The same image is used as the layer's swatch in the menu.
 3. Optional: `iconTint: { prop, colors, fallback }` fills the icon's shape with a color per category (the same `[value, color]` pairs used for the layer's legend), so one PNG serves every category.
-4. Optional: `iconSize: SMALL_START_ICON_SIZE` for dense layers, so icons start small when zoomed out.
+4. Optional: `iconByCategory: { prop, icons }` uses a different PNG per category instead of `icon` (as for Hospitals & Clinics and Soup Kitchens & Food Pantries); give each legend entry its `icon` too so the menu matches.
+5. Optional: `iconSize: SMALL_START_ICON_SIZE` for dense layers, so icons start small when zoomed out, or a zoom expression that sizes categories differently; `iconSortKey` decides which category is drawn on top; `iconAnchor: "bottom"` puts the bottom of the icon (e.g. a pin's tip) on the point.
 
 Icon and dot sizes per zoom level are the `ICON_SIZE`, `SMALL_START_ICON_SIZE`, `DOT_RADIUS` and `HOLLOW_DOT_RADIUS` constants near the top of `pois.ts`.
+
+### District labels
+
+District layers are defined in `DISTRICTS` in `src/map/districts.ts`. `labelPrefix` (e.g. `"FB "`) is put in front of each label and names the district in its popup; `smallLabels: true` uses the smaller label size.
 
 ### Title
 
@@ -121,7 +136,7 @@ The **OME MAP** title is an SVG (`public/ome-map-title.svg`) exported from Canva
 
 ## Deploy to GitHub Pages
 
-`.github/workflows/deploy.yml` builds and publishes the site on every push to `main`. It clones `nyc-geography-crosswalks` (and downloads its latest `all_boundaries.geojson` release asset), runs every ETL — each one is allowed to fail without blocking the deploy — then `vite build`, then deploys `dist/` to GitHub Pages.
+`.github/workflows/deploy.yml` builds and publishes the site on every push to `main`. It clones `nyc-geography-crosswalks` (and downloads its latest `all_boundaries.geojson` release asset), runs every ETL — each one is allowed to fail without blocking the deploy — then `vite build`, then deploys `dist/` to GitHub Pages. The boundaries and POI ETLs retry a failed download a few times, so a brief network error on the build machine doesn't drop a layer.
 
 Setup:
 
@@ -140,7 +155,7 @@ ome-map/
 ├── package.json
 ├── public/
 │   ├── data/                      # gitignored — populated by ETL
-│   ├── icons/                     # point-layer icons (PNG)
+│   ├── icons/                     # point-layer icons (PNG): book, school, university, Wi-Fi, H/C, pin, ladle, cart
 │   ├── ome-map-title.svg          # panel title lettering
 │   ├── neighborhoods.geojson      # custom neighborhood labels
 │   ├── places.json                # local search index
