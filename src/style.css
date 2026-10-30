@@ -238,9 +238,8 @@ html, body {
 
 #panel h1 img {
   display: block;
-  height: 36px;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  height: auto;
   margin: 4px auto 0;
 }
 
