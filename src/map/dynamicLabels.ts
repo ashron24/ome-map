@@ -43,6 +43,8 @@ export type DynamicLabelOptions = {
   nameKey: string;
   /** Extra properties that, with nameKey, identify one area when names repeat */
   groupBy?: string[];
+  /** Which areas get a label at a given zoom (default: all) */
+  include?: (props: GeoJSON.GeoJsonProperties, zoom: number) => boolean;
   /** The label string, matching the layer's text-field */
   text: (props: GeoJSON.GeoJsonProperties) => string;
   /** text-size stops, matching the layer's text-size */
@@ -188,6 +190,7 @@ function update(map: MlMap, set: LabelSet): void {
     const fontPx = interpolateStops(set.textSize, zoom);
     const shift = (ANCHOR_OFFSET_EM * fontPx) / pxPerUnit;
     for (const area of set.areas) {
+      if (set.include && !set.include(area.props, zoom)) continue;
       const [wPx, hPx] = labelBoxPx(area.text, fontPx, set.maxWidthEms);
       const w = wPx / pxPerUnit, h = hPx / pxPerUnit;
       // Keep the point far enough from the menu that a label shifted off it

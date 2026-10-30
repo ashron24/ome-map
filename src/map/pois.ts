@@ -45,8 +45,13 @@ export type POIDef = {
   iconTint?: { prop: string; colors: [string, string][]; fallback: string };
   /** `icon-size` override; defaults to ICON_SIZE */
   iconSize?: ExpressionSpecification;
-  /** Polygon layers: name labels from `minZoom` up (groupBy: extra props that tell same-named areas apart) */
-  labels?: { prop: string; groupBy?: string[]; minZoom: number };
+  /** Polygon layers: name labels from `minZoom` up (groupBy: extra props that tell same-named areas apart; include: which areas to label at a zoom) */
+  labels?: {
+    prop: string;
+    groupBy?: string[];
+    minZoom: number;
+    include?: (props: GeoJSON.GeoJsonProperties, zoom: number) => boolean;
+  };
   minZoom?: number;
   popupFields: { key: string; label: string }[];
   attribution: Attribution;
@@ -279,8 +284,15 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/parks.geojson"),
     geomType: "polygon",
     color: "#388E3C",
-    // 123 parks are just named "Park", so location tells them apart
-    labels: { prop: "name", groupBy: ["location"], minZoom: 13 },
+    labels: {
+      prop: "name",
+      groupBy: ["location"], // some parks share a name across separate sites
+      minZoom: 13,
+      // Biggest parks (≥ 5 acres) from zoom 13, all from 14.5; never the 123
+      // parcels named just "Park", which are mostly road medians
+      include: (p, zoom) =>
+        String(p?.name ?? "").trim() !== "Park" && (zoom >= 14.5 || Number(p?.acres) >= 5),
+    },
     popupFields: [
       { key: "name", label: "Park" },
       { key: "type", label: "Type" },
@@ -674,6 +686,7 @@ export async function ensurePOISource(
         url: def.source,
         nameKey: labels.prop,
         groupBy: labels.groupBy,
+        include: labels.include,
         text: (p) => String(p?.[labels.prop] ?? ""),
         textSize: POLY_LABEL_SIZE,
         maxWidthEms: POLY_LABEL_MAX_WIDTH,
