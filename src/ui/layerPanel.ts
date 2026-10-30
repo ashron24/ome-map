@@ -38,6 +38,8 @@ type PanelDeps = {
   onChange?: () => void;
   initialMetric?: string;
   initialEthnicities?: Set<string>;
+  /** Start with the menu rolled up under the title */
+  startRolled?: boolean;
 };
 
 let onChangeCallback: (() => void) | undefined;
@@ -80,10 +82,12 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
   content.className = "panel-body-inner";
   body.appendChild(content);
   root.appendChild(body);
-  titleBtn.addEventListener("click", () => {
-    const rolled = root.classList.toggle("panel-rolled");
+  const setRolled = (rolled: boolean) => {
+    root.classList.toggle("panel-rolled", rolled);
     titleBtn.setAttribute("aria-expanded", String(!rolled));
-  });
+  };
+  setRolled(deps.startRolled ?? false);
+  titleBtn.addEventListener("click", () => setRolled(!root.classList.contains("panel-rolled")));
 
   const subtitle = document.createElement("p");
   subtitle.className = "subtitle";

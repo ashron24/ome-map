@@ -47,7 +47,9 @@ import { STATION_ICON, stationIcon } from "./map/basemap-style.ts";
 // bundling; point it at the worker file Vite emits instead.
 setWorkerUrl(maplibreWorkerUrl);
 
-const NYC_CENTER: [number, number] = [-73.9796, 40.7033];
+// Opening view: all five boroughs
+const NYC_CENTER: [number, number] = [-73.8980, 40.7013];
+const NYC_ZOOM = 10.17;
 
 const initialState = parseHash(window.location.hash);
 const initialBasemapDef =
@@ -60,7 +62,7 @@ const map = new MlMap({
   container: "map",
   style: initialStyle,
   center: initialState.center ?? NYC_CENTER,
-  zoom: initialState.zoom ?? 10.5,
+  zoom: initialState.zoom ?? NYC_ZOOM,
   minZoom: 9,
   maxZoom: 18,
 });
@@ -170,6 +172,8 @@ function mountPanel() {
     onChange: persist,
     initialMetric: initialState.metric,
     initialEthnicities: initialState.ethnicities,
+    // Phones start with the menu rolled up to its title bar
+    startRolled: window.matchMedia("(max-width: 640px)").matches,
   });
 }
 
@@ -219,21 +223,7 @@ async function applyInitialLayers() {
   }
 }
 
-function setupPanelToggle() {
-  const toggle = document.getElementById("panel-toggle");
-  const panel = document.getElementById("panel");
-  if (!toggle || !panel) return;
-
-  const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
-  if (isMobile()) panel.classList.add("panel-collapsed");
-
-  toggle.addEventListener("click", () => {
-    panel.classList.toggle("panel-collapsed");
-  });
-}
-
 mountPanel();
-setupPanelToggle();
 
 const searchRoot = document.getElementById("search-root");
 if (searchRoot) mountSearch(map, searchRoot);

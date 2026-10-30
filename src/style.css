@@ -35,13 +35,6 @@ html, body {
   border-radius: 6px;
   padding: 10px 12px;
   z-index: 5;
-  transition: transform 0.18s ease, opacity 0.18s ease;
-}
-
-#panel.panel-collapsed {
-  transform: translateX(calc(-100% - 70px));
-  opacity: 0;
-  pointer-events: none;
 }
 
 #map-logo {
@@ -171,57 +164,12 @@ html, body {
   }
 }
 
-#panel-toggle {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  z-index: 6;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  padding: 7px 11px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-  font-family: inherit;
-}
-
-#panel-toggle:hover {
-  background: #f7f7f7;
-}
-
-#panel-toggle:focus-visible {
-  outline: 2px solid #2b8cbe;
-  outline-offset: 2px;
-}
-
-.panel-toggle-text {
-  font-size: 12px;
-  letter-spacing: 0.02em;
-}
-
 @media (max-width: 640px) {
   #panel {
     width: calc(100vw - 24px);
     max-width: 300px;
     top: 6px;
     left: 10px;
-  }
-
-  .panel-toggle-text {
-    display: none;
-  }
-
-  #panel-toggle {
-    bottom: 10px;
-    left: 10px;
-    padding: 7px 10px;
-    font-size: 16px;
   }
 }
 
