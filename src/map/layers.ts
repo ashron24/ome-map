@@ -108,6 +108,9 @@ export async function ensureDistrictSource(
       "text-allow-overlap": false,
       "text-padding": 4,
       "text-max-width": maxWidthEms,
+      // One point per area, so let a blocked label shift a little instead of vanishing
+      "text-variable-anchor": ["center", "top", "bottom", "left", "right"],
+      "text-radial-offset": 0.6,
       visibility: "none",
     },
     paint: {

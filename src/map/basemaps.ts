@@ -140,6 +140,9 @@ export const BASEMAPS: BasemapDef[] = [
           "text-allow-overlap": false,
           "text-padding": 4,
           "text-max-width": NTA_MAX_WIDTH,
+          // One point per area, so let a blocked label shift a little instead of vanishing
+          "text-variable-anchor": ["center", "top", "bottom", "left", "right"],
+          "text-radial-offset": 0.6,
           "text-letter-spacing": 0.02,
         },
         paint: {

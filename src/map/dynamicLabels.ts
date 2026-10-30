@@ -5,8 +5,9 @@
  * labels at high zoom, and drops a label entirely once its anchor leaves the
  * screen. Instead, each label layer here reads from a Point source that is
  * recomputed after every move: one point per named area, placed at the pole
- * of inaccessibility of the area's on-screen part, and only if an estimate of
- * the label's box fits inside that part.
+ * of inaccessibility of the area's on-screen part. Areas cut off by the
+ * screen edge are labelled only if an estimate of the label's box fits
+ * inside the visible part.
  *
  * All geometry is held in Web Mercator units (0..1 world), so one pixel is
  * 1 / (512 * 2^zoom) in both axes. Rotation and pitch are approximated by the
@@ -23,7 +24,7 @@ type BBox = [number, number, number, number];
 type Part = {
   rings: Ring[];
   bbox: BBox;
-  // Pole of the whole part, computed lazily for parts fully on screen
+  // Pole of the whole part, computed lazily
   pole?: { pt: Pt; dist: number };
 };
 
@@ -181,31 +182,47 @@ function update(map: MlMap, set: LabelSet): void {
 }
 
 /**
- * Best label point for one area in the current view, or null if no on-screen
- * part has room. Picks the visible piece with the largest inscribed circle.
+ * Best label point for one area in the current view, or null.
+ *
+ * A part entirely on screen is always labelled at its pole, as MapLibre would
+ * (the label may overhang its edges). A part cut off by the screen edge is
+ * labelled inside its visible piece if the label fits there; otherwise at the
+ * part's own pole if that is on screen. Never fewer labels than MapLibre's
+ * default placement, apart from collisions.
  */
 function placeLabel(area: Area, view: BBox, pxPerUnit: number, w: number, h: number): Pt | null {
-  let best: { pt: Pt; dist: number; rings: Ring[] } | null = null;
+  let bestWhole: { pt: Pt; dist: number } | null = null;
+  let bestClipped: { pt: Pt; dist: number; rings: Ring[]; part: Part } | null = null;
 
   for (const part of area.parts) {
     if (!intersects(part.bbox, view)) continue;
 
-    let rings: Ring[];
-    let pole: { pt: Pt; dist: number };
     if (contains(view, part.bbox)) {
-      rings = part.rings;
-      pole = part.pole ??= poleOf(rings, Math.min(part.bbox[2] - part.bbox[0], part.bbox[3] - part.bbox[1]) / 200);
+      const pole = partPole(part);
+      if (!bestWhole || pole.dist > bestWhole.dist) bestWhole = pole;
     } else {
-      rings = clipRings(part.rings, view);
+      const rings = clipRings(part.rings, view);
       if (!rings.length) continue;
-      pole = poleOf(rings, 1 / pxPerUnit);
+      const pole = poleOf(rings, 1 / pxPerUnit);
+      if (!bestClipped || pole.dist > bestClipped.dist) bestClipped = { ...pole, rings, part };
     }
-
-    if (!best || pole.dist > best.dist) best = { ...pole, rings };
   }
 
-  if (!best || best.dist < h / 2) return null;
-  return boxFits(best.pt, w, h, best.rings) ? best.pt : null;
+  if (bestClipped && (!bestWhole || bestClipped.dist > bestWhole.dist)) {
+    const fits = bestClipped.dist >= h / 2 && boxFits(bestClipped.pt, w, h, bestClipped.rings);
+    if (fits) return bestClipped.pt;
+    const own = partPole(bestClipped.part).pt;
+    if (inBBox(own, view)) return own;
+  }
+  return bestWhole?.pt ?? null;
+}
+
+function partPole(part: Part): { pt: Pt; dist: number } {
+  return part.pole ??= poleOf(part.rings, Math.min(part.bbox[2] - part.bbox[0], part.bbox[3] - part.bbox[1]) / 200);
+}
+
+function inBBox([x, y]: Pt, b: BBox): boolean {
+  return x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
 }
 
 // ── geometry helpers ──────────────────────────────────────────────────────────
