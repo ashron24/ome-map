@@ -75,9 +75,13 @@ map.on("style.load", () => {
   registerBasemapLabels(map);
 });
 
+// Seed active layers from the URL before the panel mounts, so their
+// checkboxes and swatches render checked; applyInitialLayers loads them.
 const state: AppState = {
   ...emptyState(),
   basemap: initialBasemapDef.id,
+  districts: new Set([...initialState.districts].filter((id) => DISTRICTS.some((d) => d.id === id))),
+  pois: new Set([...initialState.pois].filter((id) => POIS.some((p) => p.id === id))),
   ethnicities: new Set(initialState.ethnicities),
   heatmaps: new Set(initialState.heatmaps),
 };
