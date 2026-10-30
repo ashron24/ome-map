@@ -41,10 +41,23 @@ export type POIDef = {
   icon?: string;
   /** Recolor the icon's shape per category, like colorExpr: property value → color */
   iconTint?: { prop: string; colors: [string, string][]; fallback: string };
+  /** `icon-size` override; defaults to ICON_SIZE */
+  iconSize?: ExpressionSpecification;
   minZoom?: number;
   popupFields: { key: string; label: string }[];
   attribution: Attribution;
 };
+
+// Point symbols grow as you zoom in, all the way to max zoom (18)
+const ICON_SIZE: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 0.7, 13, 1, 15, 1.5, 18, 2.25]; // ≈11 → 36 px
+// For dense icon layers: much smaller zoomed out, same size zoomed in
+const SMALL_START_ICON_SIZE: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 0.35, 12, 0.55, 14, 1, 16, 1.6, 18, 2.25]; // ≈6 → 36 px
+const DOT_RADIUS: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 15, 8, 18, 13];
+const HOLLOW_DOT_RADIUS: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 15, 7, 18, 11];
 
 const FACDB: Attribution = {
   name: "NYC DCP FacDB",
@@ -159,6 +172,7 @@ export const POIS: POIDef[] = [
     colorExpr: SCHOOL_COLOR_EXPR,
     legend: SCHOOL_KIND_COLORS.map(([label, color]) => ({ label, color })),
     icon: "icons/school.png",
+    iconSize: SMALL_START_ICON_SIZE,
     iconTint: { prop: "kind", colors: SCHOOL_KIND_COLORS, fallback: "#888888" },
     popupFields: [
       { key: "name", label: "School" },
@@ -336,7 +350,6 @@ export const POIS: POIDef[] = [
     source: dataUrl("data/pois/bus-routes.geojson"),
     geomType: "line",
     color: "#BF3030",
-    minZoom: 13,
     popupFields: [
       { key: "name", label: "Route" },
       { key: "fullname", label: "Name" },
@@ -368,7 +381,7 @@ export const POIS: POIDef[] = [
     geomType: "point",
     color: "#00ACC1",
     icon: "icons/linknyc.png",
-    minZoom: 13,
+    iconSize: SMALL_START_ICON_SIZE,
     popupFields: [
       { key: "site_id", label: "Site ID" },
       { key: "addr", label: "Address" },
@@ -509,14 +522,6 @@ const iconImageId = (id: string) => `poi-icon-${id}`;
 
 // Icons draw at 16 CSS px whatever their source size, so higher-res PNGs stay sharp on retina
 const ICON_CSS_PX = 16;
-
-// Point symbols grow as you zoom in, all the way to max zoom (18)
-const ICON_SIZE: ExpressionSpecification =
-  ["interpolate", ["linear"], ["zoom"], 10, 0.7, 13, 1, 15, 1.5, 18, 2.25]; // ≈11 → 36 px
-const DOT_RADIUS: ExpressionSpecification =
-  ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 15, 8, 18, 13];
-const HOLLOW_DOT_RADIUS: ExpressionSpecification =
-  ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 15, 7, 18, 11];
 
 /**
  * Register a POI layer's icon image(s) and return the `icon-image` value: one
@@ -678,7 +683,7 @@ export async function ensurePOISource(
       source: src,
       layout: {
         "icon-image": image,
-        "icon-size": ICON_SIZE,
+        "icon-size": def.iconSize ?? ICON_SIZE,
         // Behave like the dot layers: never hidden by, or hiding, labels
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
