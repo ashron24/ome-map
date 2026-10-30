@@ -42,6 +42,7 @@ import {
 } from "./state/urlState.ts";
 import type { AppState } from "./state/urlState.ts";
 import { STATION_ICON, stationIcon } from "./map/basemap-style.ts";
+import { setLabelOccluder } from "./map/dynamicLabels.ts";
 
 // MapLibre 6 locates its worker next to its own module, which Vite moves when
 // bundling; point it at the worker file Vite emits instead.
@@ -224,6 +225,8 @@ async function applyInitialLayers() {
 }
 
 mountPanel();
+const panelEl = document.getElementById("panel");
+if (panelEl) setLabelOccluder(map, panelEl);
 
 const searchRoot = document.getElementById("search-root");
 if (searchRoot) mountSearch(map, searchRoot);

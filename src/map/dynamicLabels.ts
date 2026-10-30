@@ -58,6 +58,8 @@ const CHAR_EM = 0.6;
 const LINE_EM = 1.2;
 // Room left around the text box for the halo
 const BOX_PAD_PX = 2;
+// text-radial-offset of the label layers: how far a variable anchor shifts text off its point
+const ANCHOR_OFFSET_EM = 0.6;
 
 const TILE_SIZE = 512;
 
@@ -81,6 +83,20 @@ export async function registerDynamicLabels(
   refreshDynamicLabels(map, opts.layerId);
 }
 
+/**
+ * Keep labels out from under an element overlaid on the map (the layer menu).
+ * Labels re-place themselves when the element resizes, e.g. rolls up.
+ */
+export function setLabelOccluder(map: MlMap, el: HTMLElement): void {
+  occluders.set(map, el);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // Debounced so an animated resize settles before labels move
+  new ResizeObserver(() => {
+    clearTimeout(timer);
+    timer = setTimeout(() => refreshDynamicLabels(map), 120);
+  }).observe(el);
+}
+
 /** Recompute labels now — call after changing a label layer's visibility. */
 export function refreshDynamicLabels(map: MlMap, layerId?: string): void {
   const sets = setsFor(map);
@@ -95,6 +111,7 @@ export function refreshDynamicLabels(map: MlMap, layerId?: string): void {
 // ── registry ──────────────────────────────────────────────────────────────────
 
 const registries = new WeakMap<MlMap, Map<string, LabelSet>>();
+const occluders = new WeakMap<MlMap, HTMLElement>();
 
 function setsFor(map: MlMap): Map<string, LabelSet> {
   let sets = registries.get(map);
@@ -166,11 +183,18 @@ function update(map: MlMap, set: LabelSet): void {
     const [x0, y0] = toMercator(b.getWest(), b.getNorth());
     const [x1, y1] = toMercator(b.getEast(), b.getSouth());
     const view: BBox = [x0, y0, x1, y1];
+    const occluder = occluderBBox(map, view, pxPerUnit);
 
     const fontPx = interpolateStops(set.textSize, zoom);
+    const shift = (ANCHOR_OFFSET_EM * fontPx) / pxPerUnit;
     for (const area of set.areas) {
-      const [w, h] = labelBoxPx(area.text, fontPx, set.maxWidthEms);
-      const pt = placeLabel(area, view, pxPerUnit, w / pxPerUnit, h / pxPerUnit);
+      const [wPx, hPx] = labelBoxPx(area.text, fontPx, set.maxWidthEms);
+      const w = wPx / pxPerUnit, h = hPx / pxPerUnit;
+      // Keep the point far enough from the menu that a label shifted off it
+      // by a variable anchor (e.g. text left of its point) still clears it
+      const blocked = occluder && [occluder[0], occluder[1], occluder[2] + w + shift, occluder[3] + h + shift] as BBox;
+      const regions = blocked ? subtractRect(view, blocked) : [view];
+      const pt = placeLabel(area, view, regions, blocked, pxPerUnit, w, h);
       if (pt) {
         features.push({
           type: "Feature",
@@ -193,18 +217,30 @@ function update(map: MlMap, set: LabelSet): void {
  * part's own pole if that is on screen. Never fewer labels than MapLibre's
  * default placement, apart from collisions.
  */
-function placeLabel(area: Area, view: BBox, pxPerUnit: number, w: number, h: number): Pt | null {
+function placeLabel(
+  area: Area,
+  view: BBox,
+  regions: BBox[],
+  occluder: BBox | null,
+  pxPerUnit: number,
+  w: number,
+  h: number,
+): Pt | null {
   let bestWhole: { pt: Pt; dist: number } | null = null;
   let bestClipped: { pt: Pt; dist: number; rings: Ring[]; part: Part } | null = null;
 
   for (const part of area.parts) {
     if (!intersects(part.bbox, view)) continue;
 
-    if (contains(view, part.bbox)) {
+    if (regions.some((r) => contains(r, part.bbox))) {
       const pole = partPole(part);
       if (!bestWhole || pole.dist > bestWhole.dist) bestWhole = pole;
-    } else {
-      const rings = clipRings(part.rings, view);
+      continue;
+    }
+    // Cut off by the screen edge or the menu: try each uncovered region
+    for (const region of regions) {
+      if (!intersects(part.bbox, region)) continue;
+      const rings = clipRings(part.rings, region);
       if (!rings.length) continue;
       const pole = poleOf(rings, 1 / pxPerUnit);
       if (!bestClipped || pole.dist > bestClipped.dist) bestClipped = { ...pole, rings, part };
@@ -215,9 +251,45 @@ function placeLabel(area: Area, view: BBox, pxPerUnit: number, w: number, h: num
     const fits = bestClipped.dist >= h / 2 && boxFits(bestClipped.pt, w, h, bestClipped.rings);
     if (fits) return bestClipped.pt;
     const own = partPole(bestClipped.part).pt;
-    if (inBBox(own, view)) return own;
+    if (inBBox(own, view) && !(occluder && boxOverlaps(own, w, h, occluder))) return own;
   }
   return bestWhole?.pt ?? null;
+}
+
+/** The occluding element's screen rect in Mercator units, clamped to the view. */
+function occluderBBox(map: MlMap, view: BBox, pxPerUnit: number): BBox | null {
+  const el = occluders.get(map);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  const c = map.getCanvas().getBoundingClientRect();
+  if (r.width === 0 || r.height === 0) return null;
+  const box: BBox = [
+    Math.max(view[0], view[0] + (r.left - c.left) / pxPerUnit),
+    Math.max(view[1], view[1] + (r.top - c.top) / pxPerUnit),
+    Math.min(view[2], view[0] + (r.right - c.left) / pxPerUnit),
+    Math.min(view[3], view[1] + (r.bottom - c.top) / pxPerUnit),
+  ];
+  return box[0] < box[2] && box[1] < box[3] ? box : null;
+}
+
+/**
+ * The view minus a rectangle, as up to four rectangles. The full-height strip
+ * right of the rectangle stays whole, since the menu sits at the left.
+ */
+function subtractRect(view: BBox, o: BBox): BBox[] {
+  const [vx0, vy0, vx1, vy1] = view;
+  const [ox0, oy0, ox1, oy1] = o;
+  const rects: BBox[] = [
+    [ox1, vy0, vx1, vy1], // right of it, full height
+    [vx0, oy1, ox1, vy1], // below it
+    [vx0, vy0, ox1, oy0], // above it
+    [vx0, oy0, ox0, oy1], // left of it
+  ];
+  return rects.filter(([x0, y0, x1, y1]) => x1 > x0 && y1 > y0);
+}
+
+function boxOverlaps([x, y]: Pt, w: number, h: number, b: BBox): boolean {
+  return x - w / 2 < b[2] && x + w / 2 > b[0] && y - h / 2 < b[3] && y + h / 2 > b[1];
 }
 
 function partPole(part: Part): { pt: Pt; dist: number } {
