@@ -493,6 +493,8 @@ export const POIS: POIDef[] = [
     icon: "icons/pin.png",
     iconTint: { prop: "location_type", colors: SBS_TYPE_COLORS, fallback: "#888888" },
     iconAnchor: "bottom",
+    // Pins are ~75% larger than other icons
+    iconSize: ["interpolate", ["linear"], ["zoom"], 10, 1.2, 13, 1.75, 15, 2.6, 18, 3.9],
     popupFields: [
       { key: "name", label: "Site" },
       { key: "location_type", label: "Type" },
