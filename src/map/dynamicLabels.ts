@@ -161,11 +161,56 @@ function buildAreas(fc: GeoJSON.FeatureCollection, opts: DynamicLabelOptions): A
       byName.set(key, area);
     }
     for (const poly of polys) {
-      const rings = poly.map((ring) => ring.map(([lng, lat]) => toMercator(lng, lat)));
-      if (rings[0]?.length >= 4) area.parts.push({ rings, bbox: ringBBox(rings[0]) });
+      const rings = poly
+        .map((ring) => ring.map(([lng, lat]) => toMercator(lng, lat)))
+        .filter((ring) => ring.length >= 4);
+      area.parts.push(...splitParts(rings));
     }
   }
   return [...byName.values()].filter((a) => a.parts.length);
+}
+
+/**
+ * Sort a polygon's rings into separate parts by nesting. The ArcGIS GeoJSON
+ * export sometimes returns a multi-part district as one Polygon with every
+ * island as an extra ring, which would otherwise read as holes in the first.
+ * A ring inside an odd number of others is a hole; the rest are outer rings.
+ */
+function splitParts(rings: Ring[]): Part[] {
+  const sorted = rings
+    .map((ring) => ({ ring, bbox: ringBBox(ring), size: Math.abs(signedArea(ring)) }))
+    .sort((a, b) => b.size - a.size);
+  const placed: { bbox: BBox; ring: Ring; depth: number; part?: Part }[] = [];
+  const parts: Part[] = [];
+  for (const r of sorted) {
+    // Smallest ring already placed (so the innermost) that contains this one
+    let parent: (typeof placed)[number] | undefined;
+    for (let i = placed.length - 1; i >= 0; i--) {
+      const p = placed[i];
+      if (contains(p.bbox, r.bbox) && insidePolygon(r.ring[0], [p.ring])) {
+        parent = p;
+        break;
+      }
+    }
+    const depth = parent ? parent.depth + 1 : 0;
+    if (depth % 2 === 0) {
+      const part: Part = { rings: [r.ring], bbox: r.bbox };
+      parts.push(part);
+      placed.push({ ...r, depth, part });
+    } else {
+      parent!.part!.rings.push(r.ring);
+      placed.push({ ...r, depth });
+    }
+  }
+  return parts;
+}
+
+function signedArea(ring: Ring): number {
+  let s = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    s += (ring[j][0] - ring[i][0]) * (ring[j][1] + ring[i][1]);
+  }
+  return s / 2;
 }
 
 // ── per-move update ───────────────────────────────────────────────────────────
