@@ -25,7 +25,7 @@ Other features:
   - Libraries (book) and LinkNYC Kiosks (Wi-Fi)
   - Public Schools and Colleges & Universities, recolored per category (e.g. Public vs. Charter School)
   - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
-  - SBS Program Sites: a map pin in each location type's color, with the pin's tip on the site
+  - SBS Program Sites: a large map pin in each location type's color, with the pin's tip on the site
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
 
   All icons and dots keep growing as you zoom in, and dense layers (schools, clinics, LinkNYC) start extra small when zoomed out.
@@ -49,12 +49,72 @@ Per the project scope, none of the following are in this repo or in any data fil
 
 If you need the private-layer functionality from the legacy map, that work belongs in a separate, access-controlled deployment — not this public repo.
 
-## Stack
+## Libraries, services and assets
 
-- **MapLibre GL JS 6** — vector/raster renderer (open-source fork of Mapbox GL). MapLibre 6 is ESM-only and finds its web worker relative to its own module, which Vite relocates when bundling; `src/main.ts` therefore calls `setWorkerUrl()` with the worker file Vite emits. Without it the map renders blank (`Worker failed to load` in the console).
-- **Vite + TypeScript** — vanilla, no framework
-- **Static deploy** to GitHub Pages
-- **Build-time ETL** in TypeScript fetches data from NYC Open Data and the Census Bureau and writes static GeoJSON/JSON to `public/data/` (gitignored — reproducible from the ETL)
+The site is plain TypeScript with no UI framework, built by Vite into static files and deployed to GitHub Pages. Map data is fetched at build time by TypeScript scripts and written as static GeoJSON/JSON to `public/data/` (gitignored, reproducible from the scripts).
+
+### npm packages
+
+Shipped to the browser (`dependencies`):
+
+| Package | Version | Used for |
+|---|---|---|
+| [`maplibre-gl`](https://maplibre.org/) | 6.16 | The map renderer (open-source fork of Mapbox GL JS): basemaps, boundaries, icons, labels, heatmaps, popups. MapLibre 6 is ESM-only and finds its web worker relative to its own module, which Vite relocates when bundling, so `src/main.ts` calls `setWorkerUrl()` with the worker file Vite emits. Without it the map renders blank (`Worker failed to load` in the console). |
+| [`polylabel`](https://github.com/mapbox/polylabel) | 2.1 | Finds the point inside a polygon farthest from its edges, where each district label is placed (`src/map/dynamicLabels.ts`). |
+| [`lineclip`](https://github.com/mapbox/lineclip) | 2.0 | Clips polygons to the visible screen, so labels of partly visible areas land in the visible part (`src/map/dynamicLabels.ts`). |
+
+Development and build only (`devDependencies`):
+
+| Package | Used for |
+|---|---|
+| [`vite`](https://vite.dev/) 8 | Dev server and production build |
+| [`typescript`](https://www.typescriptlang.org/) 6 | Type checking |
+| [`tsx`](https://tsx.is/) 4 | Runs the TypeScript data scripts in `scripts/` |
+| `@types/polylabel`, `@types/lineclip` | Type definitions for the two label libraries |
+
+The data scripts otherwise use only Node built-ins (`fs`, `path`, `fetch`); Node 22 is used in CI.
+
+### Online services the map calls in the browser
+
+| Service | Used for | Key |
+|---|---|---|
+| [NYC Basemap v3](https://www.arcgis.com/home/item.html?id=df7862bfd7984baab51ff9df8e214278) (NYC OTI, hosted on ArcGIS Online) | "NYC Basemap" and "Light (NYC Labels Only)" vector tiles; style loaded in `src/map/nyc-basemap.ts` | none |
+| [OpenFreeMap](https://openfreemap.org/) (Positron style) | Alternative vector basemap | none |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) tile servers | "OSM Streets" raster basemap | none |
+| [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9) | "Satellite" raster basemap | none |
+| [Protomaps basemaps-assets](https://github.com/protomaps/basemaps-assets) | Label glyphs (Noto Sans) for every map label (`GLYPHS_URL` in `src/map/basemaps.ts`) | none |
+| [NYC Geoclient v2](https://api-portal.nyc.gov/) (`api.nyc.gov/geoclient`) | Address and intersection search (`src/map/geocode.ts`, called with `fetch`, no client library) | `VITE_GEOCLIENT_KEY`, baked in at build time. Without it, search falls back to the bundled `places.json` (boroughs, neighborhoods, ZIP codes). |
+
+### Data sources the build scripts download
+
+| Source | Used for | Key |
+|---|---|---|
+| [`MODA-NYC/nyc-geography-crosswalks`](https://github.com/MODA-NYC/nyc-geography-crosswalks) release asset `all_boundaries.geojson` | District boundaries (`data:boundaries`) | none |
+| NYC Planning ArcGIS REST services | District boundaries fallback (`data:boundaries:direct`) | none |
+| [NYC Open Data](https://opendata.cityofnewyork.us/) (Socrata), incl. DCP's [Facilities Database](https://data.cityofnewyork.us/City-Government/Facilities-Database-Active-Facilities/ji82-xba5), MapPLUTO | Sanitation districts, POIs, program sites, food sites, colleges, violation heatmaps, Community Board websites | none |
+| [data.ny.gov](https://data.ny.gov/) | MTA subway and bus layers | none |
+| [US Census Bureau API](https://www.census.gov/data/developers.html), ACS 5-Year | Demographic choropleths and ethnicity layers (`data:census`) | `CENSUS_API_KEY` (free) |
+| `scripts/data/officials.csv` (hand-maintained, in the repo) | Elected officials and Community Board contacts in district popups | none |
+
+A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes returns a multi-part district as one Polygon with its islands as extra rings. `splitParts()` in `src/map/dynamicLabels.ts` sorts rings back into parts by nesting, so labels still go on each district's largest piece.
+
+### Assets bundled in the repo (`public/`)
+
+| File | What it is |
+|---|---|
+| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
+| `ome-map-title.svg` | Panel title lettering, exported from Canva in the Pintazo typeface (see [Title](#title)) |
+| `fonts/union_gothic-variable.ttf` | Union Gothic, self-hosted from NYC.gov; the previous panel title font, still styled in `src/style.css` |
+| `logo.jpeg` | Mayor's Office of Mass Engagement logo (top right, links to the office's site) |
+| `favicon.png`, `apple-touch-icon.png` | Browser-tab and home-screen icons, made from the logo |
+| `neighborhoods.geojson` | Neighborhood label areas for the "Light (NYC Labels Only)" basemap, converted from a custom neighborhoods shapefile (State Plane → WGS84, simplified) |
+| `subway-stations.geojson`, `cemeteries.geojson` | Basemap overlays, ported from [`CityOfNewYork/nyc-map-kit`](https://github.com/CityOfNewYork/nyc-map-kit) |
+| `places.json` | Local search index: 296 neighborhoods, 5 boroughs, 183 ZIP codes |
+| `data/` | Everything the build scripts generate (gitignored) |
+
+### Code ported from other projects
+
+- NYC Basemap loading and styling (`src/map/nyc-basemap.ts`, `src/map/basemap-style.ts`) and the Geoclient and local place search (`src/map/geocode.ts`, `src/map/places.ts`) are adapted from [`CityOfNewYork/nyc-map-kit`](https://github.com/CityOfNewYork/nyc-map-kit).
 
 ## Quickstart
 
@@ -156,12 +216,13 @@ ome-map/
 ├── public/
 │   ├── data/                      # gitignored — populated by ETL
 │   ├── icons/                     # point-layer icons (PNG): book, school, university, Wi-Fi, H/C, pin, ladle, cart
+│   ├── fonts/                     # Union Gothic (previous title font)
 │   ├── ome-map-title.svg          # panel title lettering
 │   ├── neighborhoods.geojson      # custom neighborhood labels
 │   ├── places.json                # local search index
 │   ├── subway-stations.geojson    # basemap station overlay
 │   ├── cemeteries.geojson
-│   ├── fonts/  logo.jpeg  favicon.png  apple-touch-icon.png
+│   ├── logo.jpeg  favicon.png  apple-touch-icon.png
 ├── scripts/
 │   ├── data/officials.csv         # elected officials + CB contacts (hand-maintained)
 │   ├── build_boundaries.ts        # districts from nyc-geography-crosswalks
