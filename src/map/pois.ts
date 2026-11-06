@@ -33,7 +33,7 @@ type Attribution = { name: string; href: string };
 export type POIDef = {
   id: POIId;
   label: string;
-  group: "facilities" | "services";
+  group: "facilities" | "events" | "sites";
   source: string;
   geomType: POIGeomType;
   color: string;
@@ -471,7 +471,7 @@ export const POIS: POIDef[] = [
   {
     id: "outreach-events",
     label: "Outreach & Events",
-    group: "services",
+    group: "events",
     // Converted from a shapefile by `npm run data:outreach`
     source: dataUrl("outreach-events.geojson"),
     geomType: "point",
@@ -496,7 +496,7 @@ export const POIS: POIDef[] = [
   {
     id: "dycd-sites",
     label: "DYCD Program Sites",
-    group: "services",
+    group: "sites",
     source: dataUrl("data/pois/dycd-sites.geojson"),
     geomType: "point",
     color: "#888888",
@@ -519,7 +519,7 @@ export const POIS: POIDef[] = [
   {
     id: "sbs-sites",
     label: "SBS Program Sites",
-    group: "services",
+    group: "sites",
     source: dataUrl("data/pois/sbs-sites.geojson"),
     geomType: "point",
     color: "#888888",
@@ -546,29 +546,9 @@ export const POIS: POIDef[] = [
     },
   },
   {
-    id: "cbo-sites",
-    label: "NYC Service CBOs",
-    group: "services",
-    source: dataUrl("data/pois/cbo-sites.geojson"),
-    geomType: "point",
-    color: "#F57C00",
-    popupFields: [
-      { key: "name", label: "Organization" },
-      { key: "mission", label: "Mission" },
-      { key: "address", label: "Address" },
-      { key: "borough", label: "Borough" },
-      { key: "nta", label: "Neighborhood" },
-      { key: "website", label: "Website" },
-    ],
-    attribution: {
-      name: "NYC Open Data",
-      href: "https://data.cityofnewyork.us/Social-Services/NYC-Community-Based-Organizations/i4kb-6ab6",
-    },
-  },
-  {
     id: "food-sites",
     label: "Soup Kitchens & Food Pantries",
-    group: "services",
+    group: "sites",
     source: dataUrl("data/pois/food-sites.geojson"),
     geomType: "point",
     color: "#888888",
@@ -597,6 +577,26 @@ export const POIS: POIDef[] = [
       { key: "operator", label: "Operator" },
     ],
     attribution: FACDB,
+  },
+  {
+    id: "cbo-sites",
+    label: "NYC Service CBOs",
+    group: "sites",
+    source: dataUrl("data/pois/cbo-sites.geojson"),
+    geomType: "point",
+    color: "#F57C00",
+    popupFields: [
+      { key: "name", label: "Organization" },
+      { key: "mission", label: "Mission" },
+      { key: "address", label: "Address" },
+      { key: "borough", label: "Borough" },
+      { key: "nta", label: "Neighborhood" },
+      { key: "website", label: "Website" },
+    ],
+    attribution: {
+      name: "NYC Open Data",
+      href: "https://data.cityofnewyork.us/Social-Services/NYC-Community-Based-Organizations/i4kb-6ab6",
+    },
   },
 ];
 

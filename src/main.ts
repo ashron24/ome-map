@@ -35,6 +35,7 @@ import {
 import { mountLayerPanel } from "./ui/layerPanel.ts";
 import { mountSearch } from "./ui/search.ts";
 import { mountEventFilter } from "./ui/eventFilter.ts";
+import type { EventFilterHandle } from "./ui/eventFilter.ts";
 import {
   debounce,
   parseHash,
@@ -101,10 +102,14 @@ function snapshotState(): AppState {
     heatmaps: state.heatmaps,
     metric: state.metric,
     ethnicities: state.ethnicities,
+    // Only while the layer is on, so a link never carries a filter for a hidden layer
+    eventFilter: state.pois.has("outreach-events") ? eventFilter?.params() : undefined,
   };
 }
 
 const persist = debounce(() => writeHash(snapshotState()), 250);
+
+let eventFilter: EventFilterHandle | null = null;
 
 map.on("moveend", persist);
 
@@ -236,7 +241,9 @@ if (searchRoot) mountSearch(map, searchRoot);
 
 // Before applyInitialLayers, so a shared link that turns the layer on shows the bar
 const eventFilterRoot = document.getElementById("event-filter-root");
-if (eventFilterRoot) mountEventFilter(map, eventFilterRoot);
+eventFilter = eventFilterRoot
+  ? mountEventFilter(map, eventFilterRoot, { initial: initialState.eventFilter, onChange: persist })
+  : null;
 
 // applyInitialLayers needs the style to be ready first.
 map.once("style.load", () => void applyInitialLayers());

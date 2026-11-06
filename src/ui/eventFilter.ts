@@ -12,6 +12,7 @@ import type { Map as MlMap, FilterSpecification } from "maplibre-gl";
 import { POIS, onPOIVisibilityChange, setPOIFilter } from "../map/pois.ts";
 import type { POIId } from "../map/pois.ts";
 import { dataUrl } from "../util/url.ts";
+import type { EventFilterParams } from "../state/urlState.ts";
 
 const LAYER_ID: POIId = "outreach-events";
 
@@ -41,12 +42,27 @@ type FilterState = {
 
 const AUDIENCE_PRESETS = [50, 100, 500, 1000];
 
-export function mountEventFilter(map: MlMap, root: HTMLElement): void {
-  const def = POIS.find((p) => p.id === LAYER_ID);
-  if (!def) return;
+export type EventFilterHandle = {
+  /** The current filter for a shareable link, or undefined when it shows every event */
+  params(): EventFilterParams | undefined;
+};
 
+export function mountEventFilter(
+  map: MlMap,
+  root: HTMLElement,
+  opts: { initial?: EventFilterParams; onChange: () => void },
+): EventFilterHandle {
+  const def = POIS.find((p) => p.id === LAYER_ID);
+  if (!def) return { params: () => undefined };
+
+  const init = opts.initial;
   const state: FilterState = {
-    types: new Set(), agencies: new Set(), from: "", to: "", minAudience: null, maxAudience: null,
+    types: new Set(init?.types),
+    agencies: new Set(init?.agencies),
+    from: init?.from ?? "",
+    to: init?.to ?? "",
+    minAudience: init?.minAudience ?? null,
+    maxAudience: init?.maxAudience ?? null,
   };
   let events: Event[] | null = null;
   let loading: Promise<void> | null = null;
@@ -339,6 +355,7 @@ export function mountEventFilter(map: MlMap, root: HTMLElement): void {
     setButton(agencyCtl, choiceSummary(state.agencies));
     setButton(dateCtl, dateSummary(state.from, state.to));
     setButton(audienceCtl, audienceSummary(state.minAudience, state.maxAudience));
+    opts.onChange();
   }
 
   function setButton(c: ReturnType<typeof control>, summary: string): void {
@@ -361,6 +378,13 @@ export function mountEventFilter(map: MlMap, root: HTMLElement): void {
             audience: typeof p.audience === "number" ? p.audience : null,
           };
         });
+        // A shared link may name types or agencies no longer in the data, which
+        // would hide every event with no checked box to explain it
+        const known = (vals: Set<string>, present: Set<string>) => {
+          for (const v of vals) if (!present.has(v)) vals.delete(v);
+        };
+        known(state.types, new Set(events.map((e) => e.type)));
+        known(state.agencies, new Set(events.flatMap((e) => e.agencies)));
         rebuildPopovers();
         apply();
       })
@@ -378,6 +402,23 @@ export function mountEventFilter(map: MlMap, root: HTMLElement): void {
     if (!visible) closeAll();
     else void load();
   });
+
+  // A shared link with a filter: start loading now, so the filter is usually
+  // in place before the layer is first drawn
+  if (isActive()) void load();
+
+  return {
+    params: () => isActive()
+      ? {
+        types: [...state.types],
+        agencies: [...state.agencies],
+        from: state.from,
+        to: state.to,
+        minAudience: state.minAudience,
+        maxAudience: state.maxAudience,
+      }
+      : undefined,
+  };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────

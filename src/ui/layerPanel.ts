@@ -109,10 +109,22 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   content.appendChild(
     buildGroup({
-      title: "Agency Outreach & Events",
+      title: "Agency Events & Outreach",
       collapsed: true,
       body: buildPOIList(
-        POIS.filter((p) => p.group === "services"),
+        POIS.filter((p) => p.group === "events"),
+        deps.map,
+        activePOIs,
+      ),
+    }),
+  );
+
+  content.appendChild(
+    buildGroup({
+      title: "Agency Sites & Services",
+      collapsed: true,
+      body: buildPOIList(
+        POIS.filter((p) => p.group === "sites"),
         deps.map,
         activePOIs,
       ),
