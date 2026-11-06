@@ -628,6 +628,36 @@ html, body {
   text-decoration: underline;
 }
 
+/* Excel's green, so the button reads as a spreadsheet download */
+.ef-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #fff;
+  background: #1D6F42;
+  border: 1px solid #1D6F42;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.ef-export:hover {
+  background: #185C37;
+}
+
+.ef-export:disabled {
+  background: #9bbfa9;
+  border-color: #9bbfa9;
+  cursor: default;
+}
+
+.ef-export:focus-visible {
+  outline: 2px solid #1E88E5;
+  outline-offset: 1px;
+}
+
 .ef-pop {
   position: absolute;
   top: calc(100% + 6px);
@@ -647,6 +677,15 @@ html, body {
 
 .ef-pop[hidden] {
   display: none;
+}
+
+/* Short values (agency acronyms) don't need the full width */
+.ef-pop-narrow {
+  min-width: 0;
+}
+
+.ef-pop-narrow .ef-option-label {
+  padding-right: 6px;
 }
 
 .ef-list {

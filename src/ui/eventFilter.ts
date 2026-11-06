@@ -21,7 +21,11 @@ type EventProps = {
   date_iso?: string;
   event_type?: string;
   agency?: string;
+  location?: string;
+  address?: string;
   audience?: number | null;
+  details?: string;
+  link?: string;
 };
 
 type Event = {
@@ -29,6 +33,8 @@ type Event = {
   agencies: string[];
   date: string; // YYYY-MM-DD, or "" when unknown
   audience: number | null;
+  props: EventProps; // for the spreadsheet export
+  coords: [number, number] | null;
 };
 
 type FilterState = {
@@ -100,12 +106,25 @@ export function mountEventFilter(
     apply();
   });
 
-  bar.append(title, controls, count, clearAll);
+  const exportBtn = document.createElement("button");
+  exportBtn.type = "button";
+  exportBtn.className = "ef-export";
+  // Icon only, so the bar still fits on one line between the menu and the search box
+  exportBtn.innerHTML =
+    `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">` +
+    `<path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11"/></svg>`;
+  exportBtn.title = "Export to Excel: download the events shown on the map";
+  exportBtn.setAttribute("aria-label", "Export to Excel");
+  exportBtn.disabled = true;
+  exportBtn.addEventListener("click", () => void exportXlsx());
+
+  bar.append(title, controls, count, clearAll, exportBtn);
   root.appendChild(bar);
 
   const typeCtl = control("Event type");
   const dateCtl = control("Date");
   const agencyCtl = control("Agency");
+  agencyCtl.pop.classList.add("ef-pop-narrow");
   const audienceCtl = control("Audience");
   controls.append(typeCtl.el, dateCtl.el, agencyCtl.el, audienceCtl.el);
 
@@ -167,7 +186,7 @@ export function mountEventFilter(
     const agencyCounts = tally(evs.flatMap((e) => e.agencies));
     const agencies = [...agencyCounts.keys()].sort((a, b) => a.localeCompare(b));
     agencyCtl.pop.replaceChildren(
-      checklist(agencies, agencyCounts, state.agencies),
+      checklist(agencies, null, state.agencies),
       resetButton(() => state.agencies.clear()),
     );
 
@@ -179,7 +198,7 @@ export function mountEventFilter(
 
   function checklist(
     values: string[],
-    counts: Map<string, number>,
+    counts: Map<string, number> | null, // null: no count column
     selected: Set<string>,
     decorate?: (value: string) => HTMLElement,
   ): HTMLElement {
@@ -199,10 +218,13 @@ export function mountEventFilter(
       const text = document.createElement("span");
       text.className = "ef-option-label";
       text.textContent = v;
-      const n = document.createElement("span");
-      n.className = "ef-option-count";
-      n.textContent = String(counts.get(v) ?? 0);
-      row.append(input, ...(decorate ? [decorate(v)] : []), text, n);
+      row.append(input, ...(decorate ? [decorate(v)] : []), text);
+      if (counts) {
+        const n = document.createElement("span");
+        n.className = "ef-option-count";
+        n.textContent = String(counts.get(v) ?? 0);
+        row.append(n);
+      }
       list.appendChild(row);
     }
     return list;
@@ -350,6 +372,7 @@ export function mountEventFilter(
       ? `${ids.length} of ${events.length} events`
       : `${events.length} events`;
     clearAll.hidden = !active;
+    exportBtn.disabled = ids.length === 0;
 
     setButton(typeCtl, choiceSummary(state.types));
     setButton(agencyCtl, choiceSummary(state.agencies));
@@ -361,6 +384,50 @@ export function mountEventFilter(
   function setButton(c: ReturnType<typeof control>, summary: string): void {
     c.button.textContent = summary ? `${c.label}: ${summary}` : c.label;
     c.button.classList.toggle("active", !!summary);
+  }
+
+  // ── export ────────────────────────────────────────────────────────────────
+
+  /** Downloads the events that match the filter (all of them when there is none), by date. */
+  async function exportXlsx(): Promise<void> {
+    if (!events) return;
+    const { buildXlsx } = await import("../util/xlsx.ts");
+    const rows = events
+      .filter(matches)
+      .sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999") ||
+        (a.props.name ?? "").localeCompare(b.props.name ?? ""))
+      .map((e) => [
+        e.props.name ?? "",
+        e.date ? { date: e.date } : null,
+        e.type,
+        e.agencies.join(", "),
+        e.props.location ?? "",
+        e.props.address ?? "",
+        e.audience,
+        e.props.details ?? "",
+        e.props.link ? { link: e.props.link } : null,
+        e.coords ? round6(e.coords[1]) : null,
+        e.coords ? round6(e.coords[0]) : null,
+      ]);
+    const blob = buildXlsx("Events & Outreach", [
+      { header: "Event", width: 40 },
+      { header: "Date", width: 17 },
+      { header: "Event Type", width: 26 },
+      { header: "Agency", width: 18 },
+      { header: "Location", width: 36 },
+      { header: "Address", width: 36 },
+      { header: "Approx. Audience", width: 16 },
+      { header: "Details", width: 60 },
+      { header: "Link", width: 36 },
+      { header: "Latitude", width: 11 },
+      { header: "Longitude", width: 11 },
+    ], rows);
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `events-outreach-${isoToday()}.xlsx`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
   // ── data and visibility ───────────────────────────────────────────────────
@@ -376,6 +443,8 @@ export function mountEventFilter(
             agencies: (p.agency ?? "").split(",").map((a) => a.trim()).filter(Boolean),
             date: p.date_iso ?? "",
             audience: typeof p.audience === "number" ? p.audience : null,
+            props: p,
+            coords: f.geometry?.type === "Point" ? (f.geometry.coordinates as [number, number]) : null,
           };
         });
         // A shared link may name types or agencies no longer in the data, which
@@ -460,6 +529,10 @@ function shortDate(iso: string): string {
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
   });
+}
+
+function round6(n: number): number {
+  return Math.round(n * 1e6) / 1e6;
 }
 
 function isoToday(): string {
