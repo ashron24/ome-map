@@ -1,5 +1,5 @@
 /**
- * Filter bar for the Outreach & Events layer, shown at the top of the map
+ * Filter bar for the Events & Outreach layer, shown at the top of the map
  * while the layer is on. Filters by event type, date range, agency and
  * audience size: any checked value within one attribute, all attributes
  * together.
@@ -72,7 +72,7 @@ export function mountEventFilter(
   const bar = document.createElement("div");
   bar.className = "event-filter";
   bar.setAttribute("role", "group");
-  bar.setAttribute("aria-label", "Filter Outreach & Events");
+  bar.setAttribute("aria-label", "Filter Events & Outreach");
   bar.hidden = true;
 
   const title = document.createElement("span");

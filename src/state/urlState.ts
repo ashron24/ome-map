@@ -9,7 +9,7 @@ export type AppState = {
   heatmaps: Set<string>;
   metric?: string;
   ethnicities: Set<string>;
-  /** Outreach & Events filter; only set while the filter narrows the layer */
+  /** Events & Outreach filter; only set while the filter narrows the layer */
   eventFilter?: EventFilterParams;
 };
 
@@ -111,7 +111,7 @@ export function buildHash(state: AppState): string {
 }
 
 /**
- * Outreach & Events filter: et=types, ea=agencies (comma-separated),
+ * Events & Outreach filter: et=types, ea=agencies (comma-separated),
  * ed=from..to dates and eu=min..max audience (either end may be empty).
  */
 function parseEventFilter(params: URLSearchParams): EventFilterParams | undefined {

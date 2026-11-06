@@ -11,7 +11,7 @@ The original map ran on Leaflet + CartoDB. CartoDB has been sunset and the origi
 | Panel section | Layers | Source |
 |---|---|---|
 | **Districts** (14) | Community Board · City Council · NY State Senate · NY State Assembly · US Congress · Police Precinct · School District · Sanitation District · Fire Battalion · Health Center District · BIDs · Historic District · Zipcode · Neighborhood (NTA) | [`MODA-NYC/nyc-geography-crosswalks`](https://github.com/MODA-NYC/nyc-geography-crosswalks) (fallback: NYC Planning ArcGIS); DSNY districts from NYC Open Data |
-| **Public Events & Outreach** (1) | Outreach & Events | Mayor's Office of Mass Engagement event submissions (shapefile) |
+| **Public Events & Outreach** (1) | Events & Outreach | Mayor's Office of Mass Engagement event submissions (shapefile) |
 | **Program Sites & Services** (4) | DYCD Program Sites · SBS Program Sites · Soup Kitchens & Food Pantries · NYC Service CBOs | NYC Open Data, NYC DCP FacDB |
 | **Agency Code Enforcement** (3 heatmaps) | HPD Open Violations · DOB Active Safety Violations · DEP ECB Open Violations | NYC Open Data, geocoded via MapPLUTO BBL centroids |
 | **Facilities & Infrastructure** (14) | Public Schools (K-12) · Colleges & Universities · Day Care & Pre-K · Libraries · Hospitals & Clinics · Cultural Institutions · Parks · Community Gardens · Bike Routes · Subways (stations + lines) · Bus Routes · Bus Shelters · LinkNYC Kiosks · Public Restrooms | NYC DCP FacDB, NYC Open Data |
@@ -27,17 +27,17 @@ Other features:
   - Public Schools and Colleges & Universities, recolored per category (e.g. Public vs. Charter School)
   - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
   - SBS Program Sites: a large map pin in each location type's color, with the pin's tip on the site
-  - Outreach & Events: a star in each event type's color
+  - Events & Outreach: a star in each event type's color
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
 
   All icons and dots keep growing as you zoom in, and dense layers (schools, clinics, LinkNYC) start extra small when zoomed out.
-- **Outreach & Events filter** — while the Outreach & Events layer is on, a bar at the top of the map filters it by **event type**, **date** (from/to, or Upcoming / Next 30 days / Past), **agency** and **approximate audience** (at least / at most, or 50+ … 1,000+). Within one attribute any checked value matches; across attributes all must match. The bar shows how many events match (e.g. "3 of 12 events") and **Clear** resets everything. The filter is kept when the layer is turned off and on, or the basemap changes, and it is part of the shareable link (see Permalinks). On phones the bar sits just above the search box (see `src/ui/eventFilter.ts`).
+- **Events & Outreach filter** — while the Events & Outreach layer is on, a bar at the top of the map filters it by **event type**, **date** (from/to, or Upcoming / Next 30 days / Past), **agency** and **approximate audience** (at least / at most, or 50+ … 1,000+). Within one attribute any checked value matches; across attributes all must match. The bar shows how many events match (e.g. "3 of 12 events") and **Clear** resets everything. The filter is kept when the layer is turned off and on, or the basemap changes, and it is part of the shareable link (see Permalinks). On phones the bar sits just above the search box (see `src/ui/eventFilter.ts`).
 - **Polygon labels follow the view** — each district and neighborhood is labelled once, and when only part of an area is on screen its label moves into the visible part if it fits there. Labels also stay out from under the layer menu (see `src/map/dynamicLabels.ts`). District labels carry a short prefix where the name is just a number (CC, SS, AD, CG, PP, SD, FB); BIDs, Historic Districts, neighborhoods and ZIP codes use smaller labels.
 - **Park labels** — parks of 5+ acres are labelled from zoom 13 and all parks from zoom 14.5; parcels named just "Park" (mostly road medians) are never labelled.
 - **Subway station names** appear from zoom 13.5.
 - **District popups** show elected officials for council / state / congressional districts, and Community Board contact info, meeting details and a website link (from `scripts/data/officials.csv` plus NYC Open Data).
 - **Search** (top right) matches neighborhoods, boroughs and ZIP codes locally; full address search uses NYC Geoclient when a key is configured.
-- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. While the Outreach & Events layer is on, its filter is in the link too: `et` (event types) and `ea` (agencies), comma-separated, `ed` (dates, `from..to`) and `eu` (audience, `min..max`); either end of a range may be empty, e.g. `eu=100..`. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
+- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. While the Events & Outreach layer is on, its filter is in the link too: `et` (event types) and `ea` (agencies), comma-separated, `ed` (dates, `from..to`) and `eu` (audience, `min..max`); either end of a range may be empty, e.g. `eu=100..`. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
 - **Legends** — category legends (with the icon or color dot) under active POI layers, and a legend for the active choropleth.
 - **Logo and browser tab** — the logo (top right) links to the Mayor's Office of Mass Engagement site (`index.html`), and is also the browser-tab icon (`public/favicon.png`, `public/apple-touch-icon.png`) next to the "OME Map" page title.
 
@@ -105,7 +105,7 @@ A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes retu
 
 | File | What it is |
 |---|---|
-| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `star` (Outreach & Events), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
+| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `star` (Events & Outreach), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
 | `ome-map-title.svg` | Panel title lettering, exported from Canva in the Pintazo typeface (see [Title](#title)) |
 | `fonts/union_gothic-variable.ttf` | Union Gothic, self-hosted from NYC.gov; the previous panel title font, still styled in `src/style.css` |
 | `logo.jpeg` | Mayor's Office of Mass Engagement logo (top right, links to the office's site) |
@@ -113,7 +113,7 @@ A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes retu
 | `neighborhoods.geojson` | Neighborhood label areas for the "Light (NYC Labels Only)" basemap, converted from a custom neighborhoods shapefile (State Plane → WGS84, simplified) |
 | `subway-stations.geojson`, `cemeteries.geojson` | Basemap overlays, ported from [`CityOfNewYork/nyc-map-kit`](https://github.com/CityOfNewYork/nyc-map-kit) |
 | `places.json` | Local search index: 296 neighborhoods, 5 boroughs, 183 ZIP codes |
-| `outreach-events.geojson` | Outreach & Events layer, generated by `npm run data:outreach` from an event submissions shapefile |
+| `outreach-events.geojson` | Events & Outreach layer, generated by `npm run data:outreach` from an event submissions shapefile |
 | `data/` | Everything the build scripts generate (gitignored) |
 
 ### Code ported from other projects
@@ -166,7 +166,7 @@ Each ETL is idempotent — running it overwrites the corresponding files under `
 | `npm run data:census` | `census/` — ACS tract choropleth values and tract-centroid ethnicity counts (needs `CENSUS_API_KEY`) |
 | `npm run data:cb-websites` | `cd-websites.json` — Community Board website lookup (`ruf7-3wgc`) |
 | `npm run data:officials` | `district-officials.json` — built from `scripts/data/officials.csv` |
-| `npm run data:outreach -- <file.shp>` | `public/outreach-events.geojson` (committed, not under `data/`) — the Outreach & Events layer, converted from a WGS84 point shapefile of event submissions. Keeps only public event fields (name, date, type, agency, location, approx. audience, details, link); drops contact names and emails, attachments, Google Docs/Drive links, internal follow-up fields and geocoder metadata, and skips points outside NYC. Not part of `data:all`, since the shapefile isn't available to the deploy build. |
+| `npm run data:outreach -- <file.shp>` | `public/outreach-events.geojson` (committed, not under `data/`) — the Events & Outreach layer, converted from a WGS84 point shapefile of event submissions. Keeps only public event fields (name, date, type, agency, location, approx. audience, details, link); drops contact names and emails, attachments, Google Docs/Drive links, internal follow-up fields and geocoder metadata, and skips points outside NYC. Not part of `data:all`, since the shapefile isn't available to the deploy build. |
 | `npm run data:all` | All of the above, sequentially (`data:all:direct` uses the ArcGIS boundaries path) |
 
 To move to a newer ACS release, bump `ACS_YEAR` in `scripts/fetch_census.ts`.
@@ -225,7 +225,7 @@ ome-map/
 │   ├── ome-map-title.svg          # panel title lettering
 │   ├── neighborhoods.geojson      # custom neighborhood labels
 │   ├── places.json                # local search index
-│   ├── outreach-events.geojson    # Outreach & Events layer (npm run data:outreach)
+│   ├── outreach-events.geojson    # Events & Outreach layer (npm run data:outreach)
 │   ├── subway-stations.geojson    # basemap station overlay
 │   ├── cemeteries.geojson
 │   ├── logo.jpeg  favicon.png  apple-touch-icon.png
@@ -260,7 +260,7 @@ ome-map/
     ├── ui/
     │   ├── layerPanel.ts          # left-side layer menu (title roll-up, legends)
     │   ├── search.ts              # search box
-    │   └── eventFilter.ts         # Outreach & Events filter bar
+    │   └── eventFilter.ts         # Events & Outreach filter bar
     ├── state/
     │   └── urlState.ts            # permalink (#-fragment) encoding/decoding
     └── util/

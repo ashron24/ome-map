@@ -110,7 +110,7 @@ const DYCD_COLOR_EXPR = [
   "#888888",
 ];
 
-// Outreach & Events: event type colors (data values for match expression)
+// Events & Outreach: event type colors (data values for match expression)
 const EVENT_TYPE_COLORS: [string, string][] = [
   ["Resource Fair", "#D81B60"],
   ["Community Educational Event", "#1E88E5"],
@@ -470,7 +470,7 @@ export const POIS: POIDef[] = [
   },
   {
     id: "outreach-events",
-    label: "Outreach & Events",
+    label: "Events & Outreach",
     group: "events",
     // Converted from a shapefile by `npm run data:outreach`
     source: dataUrl("outreach-events.geojson"),
