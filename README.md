@@ -30,6 +30,7 @@ Other features:
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
 
   All icons and dots keep growing as you zoom in, and dense layers (schools, clinics, LinkNYC) start extra small when zoomed out.
+- **Outreach & Events filter** — while the Outreach & Events layer is on, a bar at the top of the map filters it by **event type**, **date** (from/to, or Upcoming / Next 30 days / Past), **agency** and **approximate audience** (at least / at most, or 50+ … 1,000+). Within one attribute any checked value matches; across attributes all must match. The bar shows how many events match (e.g. "3 of 12 events") and **Clear** resets everything. The filter is kept when the layer is turned off and on, or the basemap changes. On phones the bar sits just above the search box (see `src/ui/eventFilter.ts`).
 - **Polygon labels follow the view** — each district and neighborhood is labelled once, and when only part of an area is on screen its label moves into the visible part if it fits there. Labels also stay out from under the layer menu (see `src/map/dynamicLabels.ts`). District labels carry a short prefix where the name is just a number (CC, SS, AD, CG, PP, SD, FB); BIDs, Historic Districts, neighborhoods and ZIP codes use smaller labels.
 - **Park labels** — parks of 5+ acres are labelled from zoom 13 and all parks from zoom 14.5; parcels named just "Park" (mostly road medians) are never labelled.
 - **Subway station names** appear from zoom 13.5.
@@ -257,7 +258,8 @@ ome-map/
     │   └── places.ts              # local place matcher for search
     ├── ui/
     │   ├── layerPanel.ts          # left-side layer menu (title roll-up, legends)
-    │   └── search.ts              # search box
+    │   ├── search.ts              # search box
+    │   └── eventFilter.ts         # Outreach & Events filter bar
     ├── state/
     │   └── urlState.ts            # permalink (#-fragment) encoding/decoding
     └── util/
