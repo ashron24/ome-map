@@ -109,7 +109,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   content.appendChild(
     buildGroup({
-      title: "Agency Events & Outreach",
+      title: "Public Events & Outreach",
       collapsed: true,
       body: buildPOIList(
         POIS.filter((p) => p.group === "events"),
@@ -121,7 +121,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   content.appendChild(
     buildGroup({
-      title: "Agency Sites & Services",
+      title: "Program Sites & Services",
       collapsed: true,
       body: buildPOIList(
         POIS.filter((p) => p.group === "sites"),
@@ -133,7 +133,7 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   content.appendChild(
     buildGroup({
-      title: "Agency Enforcement",
+      title: "Agency Code Enforcement",
       collapsed: true,
       body: buildHeatmapList(HEATMAPS, deps.map, activeHeatmaps),
     }),
