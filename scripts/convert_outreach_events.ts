@@ -6,8 +6,8 @@
  * available to the deploy build)
  *
  * Only public event fields are kept. Contact names and emails, attachment
- * links, internal follow-up fields and geocoder metadata are dropped, and
- * points outside NYC (failed geocodes) are skipped.
+ * links, Google Docs/Drive links, internal follow-up fields and geocoder
+ * metadata are dropped, and points outside NYC (failed geocodes) are skipped.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -73,9 +73,18 @@ function displayDate(iso: string): string {
   });
 }
 
-/** First http(s) URL in a field like "RSVP link: https://…", or empty. */
+// Links to shared docs may be internal, so they never go on the public map
+const PRIVATE_LINK_HOSTS = ["docs.google.com", "drive.google.com"];
+
+/** First public http(s) URL in a field like "RSVP link: https://…", or empty. */
 function firstUrl(s: string): string {
-  return s.match(/https?:\/\/\S+/)?.[0] ?? "";
+  const url = s.match(/https?:\/\/\S+/)?.[0] ?? "";
+  try {
+    if (PRIVATE_LINK_HOSTS.includes(new URL(url).hostname)) return "";
+  } catch {
+    return "";
+  }
+  return url;
 }
 
 function main() {

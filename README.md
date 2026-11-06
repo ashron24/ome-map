@@ -163,7 +163,7 @@ Each ETL is idempotent — running it overwrites the corresponding files under `
 | `npm run data:census` | `census/` — ACS tract choropleth values and tract-centroid ethnicity counts (needs `CENSUS_API_KEY`) |
 | `npm run data:cb-websites` | `cd-websites.json` — Community Board website lookup (`ruf7-3wgc`) |
 | `npm run data:officials` | `district-officials.json` — built from `scripts/data/officials.csv` |
-| `npm run data:outreach -- <file.shp>` | `public/outreach-events.geojson` (committed, not under `data/`) — the Outreach & Events layer, converted from a WGS84 point shapefile of event submissions. Keeps only public event fields (name, date, type, agency, location, approx. audience, details, link); drops contact names and emails, attachments, internal follow-up fields and geocoder metadata, and skips points outside NYC. Not part of `data:all`, since the shapefile isn't available to the deploy build. |
+| `npm run data:outreach -- <file.shp>` | `public/outreach-events.geojson` (committed, not under `data/`) — the Outreach & Events layer, converted from a WGS84 point shapefile of event submissions. Keeps only public event fields (name, date, type, agency, location, approx. audience, details, link); drops contact names and emails, attachments, Google Docs/Drive links, internal follow-up fields and geocoder metadata, and skips points outside NYC. Not part of `data:all`, since the shapefile isn't available to the deploy build. |
 | `npm run data:all` | All of the above, sequentially (`data:all:direct` uses the ArcGIS boundaries path) |
 
 To move to a newer ACS release, bump `ACS_YEAR` in `scripts/fetch_census.ts`.
