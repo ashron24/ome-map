@@ -760,15 +760,20 @@ html, body {
   border-radius: 4px;
 }
 
-/* Audience: labels sit right next to their boxes */
+/* Audience: labels sit right next to their boxes, and the quick picks stay on
+   one row, which sets the dropdown's width */
 .ef-fields-compact {
   min-width: 0;
+}
+
+.ef-fields-compact .ef-presets {
+  flex-wrap: nowrap;
 }
 
 /* A grid, so both boxes line up after labels of different widths */
 .ef-fields-compact .ef-field {
   display: grid;
-  grid-template-columns: 50px 90px;
+  grid-template-columns: 50px 1fr;
   gap: 6px;
 }
 
@@ -833,5 +838,11 @@ html, body {
   .ef-pop {
     top: auto;
     bottom: calc(100% + 6px);
+  }
+
+  /* The last control sits near the screen's right edge */
+  .ef-control:last-child .ef-pop {
+    left: auto;
+    right: 0;
   }
 }
