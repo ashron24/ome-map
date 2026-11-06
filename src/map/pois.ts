@@ -1,4 +1,4 @@
-import type { Map as MlMap, MapGeoJSONFeature, ExpressionSpecification } from "maplibre-gl";
+import type { Map as MlMap, MapGeoJSONFeature, ExpressionSpecification, FilterSpecification } from "maplibre-gl";
 import { Popup } from "maplibre-gl";
 import { dataUrl } from "../util/url.ts";
 import { registerDynamicLabels, refreshDynamicLabels, zoomStopsExpression } from "./dynamicLabels.ts";
@@ -610,6 +610,22 @@ const stationLabelLayer = (id: string) => `poi-${id}-station-label`;
 const polyLabelLayer = (id: string) => `poi-${id}-label`;
 const polyLabelSource = (id: string) => `poi-${id}-labels`;
 
+// Point-layer filters, kept so they survive the layer being re-created after a basemap swap
+const pointFilters = new Map<POIId, FilterSpecification>();
+const visibilityListeners: ((id: POIId, visible: boolean) => void)[] = [];
+
+/** Show only matching features of a point layer; null shows them all. */
+export function setPOIFilter(map: MlMap, id: POIId, filter: FilterSpecification | null): void {
+  if (filter) pointFilters.set(id, filter);
+  else pointFilters.delete(id);
+  if (map.getLayer(pointLayer(id))) map.setFilter(pointLayer(id), filter);
+}
+
+/** Be told whenever a POI layer is shown or hidden (menu, shared link or basemap swap). */
+export function onPOIVisibilityChange(fn: (id: POIId, visible: boolean) => void): void {
+  visibilityListeners.push(fn);
+}
+
 const POLY_LABEL_SIZE: ZoomStops = [[13, 11], [15, 13], [18, 16]];
 const POLY_LABEL_MAX_WIDTH = 8;
 
@@ -860,6 +876,7 @@ export async function ensurePOISource(
         visibility: "none",
       },
       ...(def.minZoom ? { minzoom: def.minZoom } : {}),
+      ...(pointFilters.has(def.id) ? { filter: pointFilters.get(def.id) } : {}),
     });
   } else if (def.geomType === "point") {
     tryAddLayer({
@@ -878,6 +895,7 @@ export async function ensurePOISource(
       },
       layout: { visibility: "none" },
       ...(def.minZoom ? { minzoom: def.minZoom } : {}),
+      ...(pointFilters.has(def.id) ? { filter: pointFilters.get(def.id) } : {}),
     });
     if (def.hollow) {
       try { map.moveLayer(pointLayer(def.id)); } catch (_) {}
@@ -967,6 +985,7 @@ export function setPOIVisible(
     if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", v);
   }
   if (visible && def.labels) refreshDynamicLabels(map, polyLabelLayer(def.id));
+  for (const fn of visibilityListeners) fn(def.id, visible);
 }
 
 function isUrl(s: string): boolean {

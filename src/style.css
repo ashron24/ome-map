@@ -511,3 +511,272 @@ html, body {
 .popup-link:hover {
   text-decoration: underline;
 }
+
+/* ── Outreach & Events filter ────────────────────────────────────────────── */
+
+/* Spans the gap between the layer menu and the search box; the bar centers in it */
+#event-filter-root {
+  position: absolute;
+  top: 10px;
+  left: 282px;
+  right: 396px;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.event-filter {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 6px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+  color: #222;
+}
+
+.event-filter[hidden] {
+  display: none;
+}
+
+.ef-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #444;
+  padding-left: 2px;
+}
+
+.ef-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ef-control {
+  position: relative;
+}
+
+.ef-button {
+  font: inherit;
+  font-size: 12px;
+  color: #222;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 14px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ef-button::after {
+  content: " \25BE";
+  color: #777;
+}
+
+.ef-button:hover {
+  background: #f0f0f0;
+}
+
+.ef-button.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.ef-button.active::after {
+  color: #bbb;
+}
+
+.ef-button:focus-visible,
+.ef-clear:focus-visible,
+.ef-preset:focus-visible,
+.ef-reset:focus-visible {
+  outline: 2px solid #1E88E5;
+  outline-offset: 1px;
+}
+
+.ef-count {
+  font-size: 12px;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ef-clear {
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: none;
+  color: #1565C0;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.ef-clear:hover {
+  text-decoration: underline;
+}
+
+.ef-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  max-width: calc(100vw - 24px);
+  max-height: 320px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  z-index: 7;
+}
+
+.ef-pop[hidden] {
+  display: none;
+}
+
+.ef-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ef-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 2px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.ef-option:hover {
+  background: #f4f4f4;
+}
+
+.ef-option input {
+  margin: 0;
+}
+
+.ef-swatch {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.ef-option-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.ef-option-count {
+  color: #888;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding-left: 8px;
+}
+
+.ef-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 250px;
+}
+
+.ef-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: #444;
+}
+
+.ef-field input {
+  font: inherit;
+  font-size: 13px;
+  width: 140px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.ef-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ef-preset {
+  font: inherit;
+  font-size: 12px;
+  background: #f2f2f2;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+.ef-preset:hover {
+  background: #e6e6e6;
+}
+
+.ef-reset {
+  display: block;
+  margin-top: 8px;
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: none;
+  color: #1565C0;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.ef-reset:hover {
+  text-decoration: underline;
+}
+
+/* Narrower screens: below the logo, right-aligned */
+@media (max-width: 1099px) {
+  #event-filter-root {
+    top: 112px;
+    right: 10px;
+    justify-content: flex-end;
+  }
+}
+
+/* Phones: just above the search box at the bottom; popovers open upward */
+@media (max-width: 640px) {
+  #event-filter-root {
+    top: auto;
+    bottom: 104px;
+    left: 8px;
+    right: 8px;
+    justify-content: center;
+  }
+  .ef-pop {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
+}

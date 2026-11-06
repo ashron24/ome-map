@@ -34,6 +34,7 @@ import {
 } from "./map/heatmaps.ts";
 import { mountLayerPanel } from "./ui/layerPanel.ts";
 import { mountSearch } from "./ui/search.ts";
+import { mountEventFilter } from "./ui/eventFilter.ts";
 import {
   debounce,
   parseHash,
@@ -150,7 +151,9 @@ async function setBasemap(id: BasemapId) {
   state.basemap = id;
 
   const newStyle = await loadBasemapStyle(def);
-  map.setStyle(newStyle);
+  // A full reload, not a diff: a diff removes the overlay layers without firing
+  // "style.load", so they would never be restored
+  map.setStyle(newStyle, { diff: false });
 
   // Wait for the new style to be fully applied before restoring overlays.
   map.once("style.load", () => {
@@ -230,6 +233,10 @@ if (panelEl) setLabelOccluder(map, panelEl);
 
 const searchRoot = document.getElementById("search-root");
 if (searchRoot) mountSearch(map, searchRoot);
+
+// Before applyInitialLayers, so a shared link that turns the layer on shows the bar
+const eventFilterRoot = document.getElementById("event-filter-root");
+if (eventFilterRoot) mountEventFilter(map, eventFilterRoot);
 
 // applyInitialLayers needs the style to be ready first.
 map.once("style.load", () => void applyInitialLayers());
