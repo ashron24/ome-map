@@ -12,8 +12,8 @@ The original map ran on Leaflet + CartoDB. CartoDB has been sunset and the origi
 |---|---|---|
 | **Districts** (14) | Community Board · City Council · NY State Senate · NY State Assembly · US Congress · Police Precinct · School District · Sanitation District · Fire Battalion · Health Center District · BIDs · Historic District · Zipcode · Neighborhood (NTA) | [`MODA-NYC/nyc-geography-crosswalks`](https://github.com/MODA-NYC/nyc-geography-crosswalks) (fallback: NYC Planning ArcGIS); DSNY districts from NYC Open Data |
 | **Agency Outreach & Events** (5) | Outreach & Events · DYCD Program Sites · SBS Program Sites · NYC Service CBOs · Soup Kitchens & Food Pantries | Mayor's Office of Mass Engagement event submissions (shapefile), NYC Open Data, NYC DCP FacDB |
-| **Facilities & Infrastructure** (14) | Public Schools (K-12) · Colleges & Universities · Day Care & Pre-K · Libraries · Hospitals & Clinics · Cultural Institutions · Parks · Community Gardens · Bike Routes · Subways (stations + lines) · Bus Routes · Bus Shelters · LinkNYC Kiosks · Public Restrooms | NYC DCP FacDB, NYC Open Data |
 | **Agency Enforcement** (3 heatmaps) | HPD Open Violations · DOB Active Safety Violations · DEP ECB Open Violations | NYC Open Data, geocoded via MapPLUTO BBL centroids |
+| **Facilities & Infrastructure** (14) | Public Schools (K-12) · Colleges & Universities · Day Care & Pre-K · Libraries · Hospitals & Clinics · Cultural Institutions · Parks · Community Gardens · Bike Routes · Subways (stations + lines) · Bus Routes · Bus Shelters · LinkNYC Kiosks · Public Restrooms | NYC DCP FacDB, NYC Open Data |
 | **Demographics — choropleths** (7) | % Hispanic · % White (non-Hispanic) · % Black (non-Hispanic) · % Asian (non-Hispanic) · % Foreign-Born · % Non-Citizen · Median HH Income | US Census Bureau API, ACS 5-Year (2019–2023), census tracts |
 | **Demographics — ethnicity** (15 graduated symbols) | *Hispanic / Latino:* Puerto Rican, Dominican, Mexican, Central American, South American, Colombian, Ecuadorian · *Asian:* Chinese, Korean, Filipino, Asian Indian, Bangladeshi, Pakistani · *Arab / Turkish / Albanian:* Arab, Turkish, Albanian | ACS tables B03001, B02015, B04006 via the Census Bureau API |
 | **Basemap** (4) | Light (NYC Labels Only, default) · NYC Basemap (OTI v3) · OSM Streets · Satellite | NYC OTI / Esri vector tiles, OpenFreeMap, OpenStreetMap, Esri |
@@ -26,6 +26,7 @@ Other features:
   - Public Schools and Colleges & Universities, recolored per category (e.g. Public vs. Charter School)
   - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
   - SBS Program Sites: a large map pin in each location type's color, with the pin's tip on the site
+  - Outreach & Events: a star in each event type's color
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
 
   All icons and dots keep growing as you zoom in, and dense layers (schools, clinics, LinkNYC) start extra small when zoomed out.
@@ -102,7 +103,7 @@ A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes retu
 
 | File | What it is |
 |---|---|
-| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
+| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `star` (Outreach & Events), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
 | `ome-map-title.svg` | Panel title lettering, exported from Canva in the Pintazo typeface (see [Title](#title)) |
 | `fonts/union_gothic-variable.ttf` | Union Gothic, self-hosted from NYC.gov; the previous panel title font, still styled in `src/style.css` |
 | `logo.jpeg` | Mayor's Office of Mass Engagement logo (top right, links to the office's site) |
@@ -217,7 +218,7 @@ ome-map/
 ├── package.json
 ├── public/
 │   ├── data/                      # gitignored — populated by ETL
-│   ├── icons/                     # point-layer icons (PNG): book, school, university, Wi-Fi, H/C, pin, ladle, cart
+│   ├── icons/                     # point-layer icons (PNG): book, school, university, Wi-Fi, H/C, pin, star, ladle, cart
 │   ├── fonts/                     # Union Gothic (previous title font)
 │   ├── ome-map-title.svg          # panel title lettering
 │   ├── neighborhoods.geojson      # custom neighborhood labels

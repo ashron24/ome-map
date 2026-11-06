@@ -478,6 +478,9 @@ export const POIS: POIDef[] = [
     color: "#888888",
     colorExpr: EVENT_TYPE_COLOR_EXPR,
     legend: EVENT_TYPE_COLORS.map(([label, color]) => ({ label, color })),
+    // One star, tinted per event type
+    icon: "icons/star.png",
+    iconTint: { prop: "event_type", colors: EVENT_TYPE_COLORS, fallback: "#888888" },
     popupFields: [
       { key: "name", label: "Event" },
       { key: "date", label: "Date" },

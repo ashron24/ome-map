@@ -121,6 +121,14 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
 
   content.appendChild(
     buildGroup({
+      title: "Agency Enforcement",
+      collapsed: true,
+      body: buildHeatmapList(HEATMAPS, deps.map, activeHeatmaps),
+    }),
+  );
+
+  content.appendChild(
+    buildGroup({
       title: "Facilities & Infrastructure",
       collapsed: true,
       body: buildPOIList(
@@ -128,14 +136,6 @@ export function mountLayerPanel(root: HTMLElement, deps: PanelDeps): void {
         deps.map,
         activePOIs,
       ),
-    }),
-  );
-
-  content.appendChild(
-    buildGroup({
-      title: "Agency Enforcement",
-      collapsed: true,
-      body: buildHeatmapList(HEATMAPS, deps.map, activeHeatmaps),
     }),
   );
 
