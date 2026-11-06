@@ -760,6 +760,22 @@ html, body {
   border-radius: 4px;
 }
 
+/* Audience: labels sit right next to their boxes */
+.ef-fields-compact {
+  min-width: 0;
+}
+
+/* A grid, so both boxes line up after labels of different widths */
+.ef-fields-compact .ef-field {
+  display: grid;
+  grid-template-columns: 50px 90px;
+  gap: 6px;
+}
+
+.ef-fields-compact .ef-field input {
+  width: 100%;
+}
+
 .ef-presets {
   display: flex;
   flex-wrap: wrap;

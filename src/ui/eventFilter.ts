@@ -126,6 +126,7 @@ export function mountEventFilter(
   const agencyCtl = control("Agency");
   agencyCtl.pop.classList.add("ef-pop-narrow");
   const audienceCtl = control("Audience");
+  audienceCtl.pop.classList.add("ef-pop-narrow");
   controls.append(typeCtl.el, dateCtl.el, agencyCtl.el, audienceCtl.el);
 
   /** A button with a popover under it; only one popover is open at a time. */
@@ -281,7 +282,7 @@ export function mountEventFilter(
 
   function audienceFields(): HTMLElement {
     const box = document.createElement("div");
-    box.className = "ef-fields";
+    box.className = "ef-fields ef-fields-compact";
     const min = numberInput("At least", state.minAudience, (v) => { state.minAudience = v; });
     const max = numberInput("At most", state.maxAudience, (v) => { state.maxAudience = v; });
     const presets = presetRow(AUDIENCE_PRESETS.map((n) => [
