@@ -19,6 +19,7 @@ export type POIId =
   | "subway-lines"
   | "subway-stations"
   | "bus-routes"
+  | "outreach-events"
   | "dycd-sites"
   | "sbs-sites"
   | "cbo-sites"
@@ -108,6 +109,16 @@ const DYCD_COLOR_EXPR = [
   ...DYCD_AREA_COLORS.flat(),
   "#888888",
 ];
+
+// Outreach & Events: event type colors (data values for match expression)
+const EVENT_TYPE_COLORS: [string, string][] = [
+  ["Resource Fair", "#D81B60"],
+  ["Community Educational Event", "#1E88E5"],
+  ["Public Meeting", "#43A047"],
+  ["Cultural Event", "#FB8C00"],
+  ["Street Canvassing", "#8E24AA"],
+];
+const EVENT_TYPE_COLOR_EXPR = ["match", ["get", "event_type"], ...EVENT_TYPE_COLORS.flat(), "#888888"];
 
 // SBS location type colors (data values for match expression)
 const SBS_TYPE_COLORS: [string, string][] = [
@@ -456,6 +467,28 @@ export const POIS: POIDef[] = [
       { key: "accessibility", label: "Accessibility" },
     ],
     attribution: NYC_OPEN_DATA,
+  },
+  {
+    id: "outreach-events",
+    label: "Outreach & Events",
+    group: "services",
+    // Converted from a shapefile by `npm run data:outreach`
+    source: dataUrl("outreach-events.geojson"),
+    geomType: "point",
+    color: "#888888",
+    colorExpr: EVENT_TYPE_COLOR_EXPR,
+    legend: EVENT_TYPE_COLORS.map(([label, color]) => ({ label, color })),
+    popupFields: [
+      { key: "name", label: "Event" },
+      { key: "date", label: "Date" },
+      { key: "event_type", label: "Type" },
+      { key: "agency", label: "Agency" },
+      { key: "location", label: "Location" },
+      { key: "audience", label: "Approx. Audience" },
+      { key: "details", label: "Details" },
+      { key: "link", label: "Link" },
+    ],
+    attribution: { name: "NYC Mayor's Office of Mass Engagement", href: "https://www.nyc.gov/content/organize" },
   },
   {
     id: "dycd-sites",
@@ -900,7 +933,7 @@ function wirePOIInteractivity(map: MlMap, def: POIDef): void {
         if (v === undefined || v === null || v === "") return "";
         const str = String(v);
         const cell = isUrl(str)
-          ? `<a class="popup-link" href="${str}" target="_blank" rel="noopener">${escapeHtml(str)}</a>`
+          ? `<a class="popup-link" href="${escapeHtml(str)}" target="_blank" rel="noopener">${escapeHtml(str)}</a>`
           : escapeHtml(str);
         return `<dt>${escapeHtml(label)}</dt><dd>${cell}</dd>`;
       })
