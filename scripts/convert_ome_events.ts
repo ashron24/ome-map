@@ -23,7 +23,7 @@ const NYC_BBOX = [-74.3, 40.45, -73.65, 40.95];
 
 // EVENT_TYPE (lowercased, spaces removed) → shown type and icon group
 const TYPES: Record<string, { type: string; group: "canvass" | "event" }> = {
-  canvassing: { type: "Canvassing", group: "canvass" },
+  canvassing: { type: "Canvass", group: "canvass" },
   event: { type: "Event", group: "event" },
   nyc101: { type: "NYC 101", group: "event" },
 };

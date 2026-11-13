@@ -112,7 +112,7 @@ const DYCD_COLOR_EXPR = [
   "#888888",
 ];
 
-// Events & Outreach: event type colors (data values for match expression)
+// Agency Events & Outreach: event type colors (data values for match expression)
 const EVENT_TYPE_COLORS: [string, string][] = [
   ["Resource Fair", "#D81B60"],
   ["Community Educational Event", "#1E88E5"],
@@ -472,7 +472,7 @@ export const POIS: POIDef[] = [
   },
   {
     id: "outreach-events",
-    label: "Events & Outreach",
+    label: "Agency Events & Outreach",
     group: "events",
     // Converted from a shapefile by `npm run data:outreach`
     source: dataUrl("outreach-events.geojson"),
@@ -505,7 +505,7 @@ export const POIS: POIDef[] = [
     color: "#1D4ED8",
     // Blue pins in the Organize NYC style: a building for canvasses, an apple for events and NYC 101
     legend: [
-      { label: "Canvassing", color: "#1D4ED8", icon: "icons/ome-canvass.png" },
+      { label: "Canvass", color: "#1D4ED8", icon: "icons/ome-canvass.png" },
       { label: "Event / NYC 101", color: "#1D4ED8", icon: "icons/ome-event.png" },
     ],
     iconByCategory: {

@@ -27,20 +27,20 @@ Other features:
   - Public Schools and Colleges & Universities, recolored per category (e.g. Public vs. Charter School)
   - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
   - SBS Program Sites: a large map pin in each location type's color, with the pin's tip on the site
-  - Events & Outreach: a star in each event type's color
+  - Agency Events & Outreach: a star in each event type's color
   - OME Events & Canvasses: blue map pins in the Organize NYC style, a blue building for canvasses and a red apple for events and NYC 101, with the pin's tip on the location
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
 
   All icons and dots keep growing as you zoom in, and dense layers (schools, clinics, LinkNYC) start extra small when zoomed out.
 - **Event filter bars** — while an event layer is on, a bar at the top of the map filters it; with both layers on, the bars stack. Within one attribute any checked value matches; across attributes all must match. Each bar shows how many features match (e.g. "3 of 12 events"), **Clear** resets it, and the green download button exports what it shows (all of it when nothing is filtered) to an Excel spreadsheet (`.xlsx`), sorted by date; the file is built in the browser by `src/util/xlsx.ts`, which needs no library. Filters are kept when a layer is turned off and on, or the basemap changes, and are part of the shareable link (see Permalinks). On phones the bars sit just above the search box. Each bar is a `FilterConfig` in `src/ui/eventFilter.ts`:
-  - **Events & Outreach**: **event type**, **date** (from/to, or Upcoming / Next 30 days / Past), **agency** and **approximate audience** (at least / at most, or 50+ … 1,000+)
-  - **OME Events & Canvasses**: **event type** (Canvassing, Event, NYC 101), **date**, **campaign** and **neighborhood**
+  - **Agency Events & Outreach**: **event type**, **date** (from/to, or Upcoming / Next 30 days / Past), **agency** and **approximate audience** (at least / at most, or 50+ … 1,000+)
+  - **OME Events & Canvasses**: **event type** (Canvass, Event, NYC 101), **date**, **campaign** and **neighborhood**
 - **Polygon labels follow the view** — each district and neighborhood is labelled once, and when only part of an area is on screen its label moves into the visible part if it fits there. Labels also stay out from under the layer menu (see `src/map/dynamicLabels.ts`). District labels carry a short prefix where the name is just a number (CC, SS, AD, CG, PP, SD, FB); BIDs, Historic Districts, neighborhoods and ZIP codes use smaller labels.
 - **Park labels** — parks of 5+ acres are labelled from zoom 13 and all parks from zoom 14.5; parcels named just "Park" (mostly road medians) are never labelled.
 - **Subway station names** appear from zoom 13.5.
 - **District popups** show elected officials for council / state / congressional districts, and Community Board contact info, meeting details and a website link (from `scripts/data/officials.csv` plus NYC Open Data).
 - **Search** (top right) matches neighborhoods, boroughs and ZIP codes locally; full address search uses NYC Geoclient when a key is configured.
-- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. While an event layer is on, its filter is in the link too, under two-letter keys. Events & Outreach: `et` (event types) and `ea` (agencies), comma-separated, `ed` (dates, `from..to`) and `eu` (audience, `min..max`). OME Events & Canvasses: `ot` (event types), `od` (dates), `oc` (campaigns) and `on` (neighborhoods). Either end of a range may be empty, e.g. `eu=100..`; values a link names that aren't in the data are ignored. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
+- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. While an event layer is on, its filter is in the link too, under two-letter keys. Agency Events & Outreach: `et` (event types) and `ea` (agencies), comma-separated, `ed` (dates, `from..to`) and `eu` (audience, `min..max`). OME Events & Canvasses: `ot` (event types), `od` (dates), `oc` (campaigns) and `on` (neighborhoods). Either end of a range may be empty, e.g. `eu=100..`; values a link names that aren't in the data are ignored. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
 - **Legends** — category legends (with the icon or color dot) under active POI layers, and a legend for the active choropleth.
 - **Logo and browser tab** — the logo (top right) links to the Mayor's Office of Mass Engagement site (`index.html`), and is also the browser-tab icon (`public/favicon.png`, `public/apple-touch-icon.png`) next to the "OME Map" page title.
 
@@ -108,7 +108,7 @@ A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes retu
 
 | File | What it is |
 |---|---|
-| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `star` (Events & Outreach), `ome-canvass` and `ome-event` (OME Events & Canvasses pins; their SVG sources sit next to them), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
+| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `star` (Agency Events & Outreach), `ome-canvass` and `ome-event` (OME Events & Canvasses pins; their SVG sources sit next to them), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
 | `ome-map-title.svg` | Panel title lettering, exported from Canva in the Pintazo typeface (see [Title](#title)) |
 | `fonts/union_gothic-variable.ttf` | Union Gothic, self-hosted from NYC.gov; the previous panel title font, still styled in `src/style.css` |
 | `logo.jpeg` | Mayor's Office of Mass Engagement logo (top right, links to the office's site) |
@@ -116,7 +116,7 @@ A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes retu
 | `neighborhoods.geojson` | Neighborhood label areas for the "Light (NYC Labels Only)" basemap, converted from a custom neighborhoods shapefile (State Plane → WGS84, simplified) |
 | `subway-stations.geojson`, `cemeteries.geojson` | Basemap overlays, ported from [`CityOfNewYork/nyc-map-kit`](https://github.com/CityOfNewYork/nyc-map-kit) |
 | `places.json` | Local search index: 296 neighborhoods, 5 boroughs, 183 ZIP codes |
-| `outreach-events.geojson` | Events & Outreach layer, generated by `npm run data:outreach` from an event submissions shapefile |
+| `outreach-events.geojson` | Agency Events & Outreach layer, generated by `npm run data:outreach` from an event submissions shapefile |
 | `ome-events.geojson` | OME Events & Canvasses layer, generated by `npm run data:ome-events` from an event sessions export |
 | `nhac-sites.geojson` | DOHMH Neighborhood Health Action Centers layer, generated by `npm run data:nhac` from a Health Department CSV |
 | `data/` | Everything the build scripts generate (gitignored) |
@@ -171,7 +171,7 @@ Each ETL is idempotent — running it overwrites the corresponding files under `
 | `npm run data:census` | `census/` — ACS tract choropleth values and tract-centroid ethnicity counts (needs `CENSUS_API_KEY`) |
 | `npm run data:cb-websites` | `cd-websites.json` — Community Board website lookup (`ruf7-3wgc`) |
 | `npm run data:officials` | `district-officials.json` — built from `scripts/data/officials.csv` |
-| `npm run data:outreach -- <file.shp>` | `public/outreach-events.geojson` (committed, not under `data/`) — the Events & Outreach layer, converted from a WGS84 point shapefile of event submissions. Keeps only public event fields (name, date, type, agency, location, approx. audience, details, link); drops contact names and emails, attachments, Google Docs/Drive links, internal follow-up fields and geocoder metadata, and skips points outside NYC. Not part of `data:all`, since the shapefile isn't available to the deploy build. |
+| `npm run data:outreach -- <file.shp>` | `public/outreach-events.geojson` (committed, not under `data/`) — the Agency Events & Outreach layer, converted from a WGS84 point shapefile of event submissions. Keeps only public event fields (name, date, type, agency, location, approx. audience, details, link); drops contact names and emails, attachments, Google Docs/Drive links, internal follow-up fields and geocoder metadata, and skips points outside NYC. Not part of `data:all`, since the shapefile isn't available to the deploy build. |
 | `npm run data:ome-events -- <file.csv>` | `public/ome-events.geojson` (committed, not under `data/`) — the OME Events & Canvasses layer, from a `dim_st_event_sessions` CSV export. Keeps sessions whose `EVENT_TYPE` is canvassing, event or NYC101, and drops text banks ("text" in `SESSION_TITLE`) and virtual sessions (`ST_EVENT_TYPE`). Keeps only public fields: staff names, RSVP counts, reminder templates, internal ids and the RSVP dashboard link are dropped. Sessions without coordinates take them from another session at the same address, from a short table of street corners in the script, or from NYC Planning's [GeoSearch](https://geosearch.planninglabs.nyc/); sessions with no address are skipped. Times are shown in New York time. Not part of `data:all`. |
 | `npm run data:nhac -- <file.csv>` | `public/nhac-sites.geojson` (committed, not under `data/`) — the DOHMH Neighborhood Health Action Centers layer, from a CSV with columns Name, Address, City, State, Zip, Website, Lat, Long. `<Null>` values are treated as blank. Not part of `data:all`. |
 | `npm run data:all` | All of the above, sequentially (`data:all:direct` uses the ArcGIS boundaries path) |
@@ -232,7 +232,7 @@ ome-map/
 │   ├── ome-map-title.svg          # panel title lettering
 │   ├── neighborhoods.geojson      # custom neighborhood labels
 │   ├── places.json                # local search index
-│   ├── outreach-events.geojson    # Events & Outreach layer (npm run data:outreach)
+│   ├── outreach-events.geojson    # Agency Events & Outreach layer (npm run data:outreach)
 │   ├── ome-events.geojson         # OME Events & Canvasses (npm run data:ome-events)
 │   ├── nhac-sites.geojson         # DOHMH Neighborhood Health Action Centers (npm run data:nhac)
 │   ├── subway-stations.geojson    # basemap station overlay

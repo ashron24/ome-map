@@ -93,8 +93,8 @@ export const FILTERS: FilterConfig[] = [
       { kind: "number", key: "eu", label: "Audience", prop: "audience", presets: [50, 100, 500, 1000] },
     ],
     export: {
-      sheet: "Events & Outreach",
-      file: "events-outreach",
+      sheet: "Agency Events & Outreach",
+      file: "agency-events-outreach",
       columns: [
         { header: "Event", width: 40, value: (p) => str(p, "name") },
         { header: "Date", width: 17, value: (p) => (str(p, "date_iso") ? { date: str(p, "date_iso") } : null) },
@@ -117,9 +117,9 @@ export const FILTERS: FilterConfig[] = [
     fields: [
       {
         kind: "choice", key: "ot", label: "Event type", prop: "event_type", counts: true,
-        order: () => ["Canvassing", "Event", "NYC 101"],
-        // Canvassing has the building pin; Event and NYC 101 the apple
-        swatch: (value, def) => categoryIconSwatch(value === "Canvassing" ? "canvass" : "event", def),
+        order: () => ["Canvass", "Event", "NYC 101"],
+        // Canvass has the building pin; Event and NYC 101 the apple
+        swatch: (value, def) => categoryIconSwatch(value === "Canvass" ? "canvass" : "event", def),
       },
       { kind: "date", key: "od", label: "Date", prop: "date_iso" },
       { kind: "choice", key: "oc", label: "Campaign", prop: "campaign", narrow: true },
