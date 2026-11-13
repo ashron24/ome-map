@@ -581,6 +581,46 @@ export const POIS: POIDef[] = [
     },
   },
   {
+    id: "nhac-sites",
+    label: "DOHMH Neighborhood Health Action Centers",
+    group: "sites",
+    source: dataUrl("nhac-sites.geojson"),
+    geomType: "point",
+    color: "#D81B60",
+    // Map pin: the tip sits on the center
+    icon: "icons/marker-magenta.png",
+    iconAnchor: "bottom",
+    popupFields: [
+      { key: "name", label: "Center" },
+      { key: "address", label: "Address" },
+      { key: "website", label: "Website" },
+    ],
+    attribution: {
+      name: "NYC Health Department",
+      href: "https://www.nyc.gov/site/doh/index.page",
+    },
+  },
+  {
+    id: "cbo-sites",
+    label: "NYC Service CBOs",
+    group: "sites",
+    source: dataUrl("data/pois/cbo-sites.geojson"),
+    geomType: "point",
+    color: "#F57C00",
+    popupFields: [
+      { key: "name", label: "Organization" },
+      { key: "mission", label: "Mission" },
+      { key: "address", label: "Address" },
+      { key: "borough", label: "Borough" },
+      { key: "nta", label: "Neighborhood" },
+      { key: "website", label: "Website" },
+    ],
+    attribution: {
+      name: "NYC Open Data",
+      href: "https://data.cityofnewyork.us/Social-Services/NYC-Community-Based-Organizations/i4kb-6ab6",
+    },
+  },
+  {
     id: "food-sites",
     label: "Soup Kitchens & Food Pantries",
     group: "sites",
@@ -612,43 +652,6 @@ export const POIS: POIDef[] = [
       { key: "operator", label: "Operator" },
     ],
     attribution: FACDB,
-  },
-  {
-    id: "nhac-sites",
-    label: "DOHMH Neighborhood Health Action Centers",
-    group: "sites",
-    source: dataUrl("nhac-sites.geojson"),
-    geomType: "point",
-    color: "#00838F",
-    popupFields: [
-      { key: "name", label: "Center" },
-      { key: "address", label: "Address" },
-      { key: "website", label: "Website" },
-    ],
-    attribution: {
-      name: "NYC Health Department",
-      href: "https://www.nyc.gov/site/doh/index.page",
-    },
-  },
-  {
-    id: "cbo-sites",
-    label: "NYC Service CBOs",
-    group: "sites",
-    source: dataUrl("data/pois/cbo-sites.geojson"),
-    geomType: "point",
-    color: "#F57C00",
-    popupFields: [
-      { key: "name", label: "Organization" },
-      { key: "mission", label: "Mission" },
-      { key: "address", label: "Address" },
-      { key: "borough", label: "Borough" },
-      { key: "nta", label: "Neighborhood" },
-      { key: "website", label: "Website" },
-    ],
-    attribution: {
-      name: "NYC Open Data",
-      href: "https://data.cityofnewyork.us/Social-Services/NYC-Community-Based-Organizations/i4kb-6ab6",
-    },
   },
 ];
 

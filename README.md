@@ -11,8 +11,8 @@ The original map ran on Leaflet + CartoDB. CartoDB has been sunset and the origi
 | Panel section | Layers | Source |
 |---|---|---|
 | **Districts** (14) | Community Board · City Council · NY State Senate · NY State Assembly · US Congress · Police Precinct · School District · Sanitation District · Fire Battalion · Health Center District · BIDs · Historic District · Zipcode · Neighborhood (NTA) | [`MODA-NYC/nyc-geography-crosswalks`](https://github.com/MODA-NYC/nyc-geography-crosswalks) (fallback: NYC Planning ArcGIS); DSNY districts from NYC Open Data |
-| **Public Events & Outreach** (2) | Events & Outreach · OME Events & Canvasses | Mayor's Office of Mass Engagement event submissions (shapefile) and event sessions export (CSV) |
-| **Program Sites & Services** (5) | DYCD Program Sites · SBS Program Sites · Soup Kitchens & Food Pantries · DOHMH Neighborhood Health Action Centers · NYC Service CBOs | NYC Open Data, NYC DCP FacDB, NYC Health Department (CSV) |
+| **Public Events & Outreach** (2) | Agency Events & Outreach · OME Events & Canvasses | Mayor's Office of Mass Engagement event submissions (shapefile) and event sessions export (CSV) |
+| **Program Sites & Services** (5) | DYCD Program Sites · SBS Program Sites · DOHMH Neighborhood Health Action Centers · NYC Service CBOs · Soup Kitchens & Food Pantries | NYC Open Data, NYC DCP FacDB, NYC Health Department (CSV) |
 | **Agency Code Enforcement** (3 heatmaps) | HPD Open Violations · DOB Active Safety Violations · DEP ECB Open Violations | NYC Open Data, geocoded via MapPLUTO BBL centroids |
 | **Facilities & Infrastructure** (14) | Public Schools (K-12) · Colleges & Universities · Day Care & Pre-K · Libraries · Hospitals & Clinics · Cultural Institutions · Parks · Community Gardens · Bike Routes · Subways (stations + lines) · Bus Routes · Bus Shelters · LinkNYC Kiosks · Public Restrooms | NYC DCP FacDB, NYC Open Data |
 | **Demographics — choropleths** (7) | % Hispanic · % White (non-Hispanic) · % Black (non-Hispanic) · % Asian (non-Hispanic) · % Foreign-Born · % Non-Citizen · Median HH Income | US Census Bureau API, ACS 5-Year (2019–2023), census tracts |
@@ -27,6 +27,7 @@ Other features:
   - Public Schools and Colleges & Universities, recolored per category (e.g. Public vs. Charter School)
   - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
   - SBS Program Sites: a large map pin in each location type's color, with the pin's tip on the site
+  - DOHMH Neighborhood Health Action Centers: a magenta map pin, with the tip on the center
   - Agency Events & Outreach: a star in each event type's color
   - OME Events & Canvasses: blue map pins in the Organize NYC style, a blue building for canvasses and a red apple for events and NYC 101, with the pin's tip on the location
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
@@ -108,7 +109,7 @@ A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes retu
 
 | File | What it is |
 |---|---|
-| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `star` (Agency Events & Outreach), `ome-canvass` and `ome-event` (OME Events & Canvasses pins; their SVG sources sit next to them), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
+| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `marker-magenta` (Health Action Centers), `star` (Agency Events & Outreach), `ome-canvass` and `ome-event` (OME Events & Canvasses pins; their SVG sources sit next to them), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
 | `ome-map-title.svg` | Panel title lettering, exported from Canva in the Pintazo typeface (see [Title](#title)) |
 | `fonts/union_gothic-variable.ttf` | Union Gothic, self-hosted from NYC.gov; the previous panel title font, still styled in `src/style.css` |
 | `logo.jpeg` | Mayor's Office of Mass Engagement logo (top right, links to the office's site) |
