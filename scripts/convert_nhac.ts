@@ -43,6 +43,12 @@ function parseCsv(text: string): Record<string, string>[] {
   return data.map((r) => Object.fromEntries(keys.map((k, i) => [k, (r[i] ?? "").trim()])));
 }
 
+// Typos in the source CSV (as of Nov 2026), by center name; applied on every run
+const CORRECTIONS: Record<string, Record<string, string>> = {
+  "East Harlem Asthma Center of Excellence": { Zip: "10029" }, // was 11029
+  "Tremont Neighborhood Health Action Center": { Address: "1826 Arthur Avenue" }, // was "Arthure"
+};
+
 /** Empty for blanks and the "<Null>" that ArcGIS exports write for missing values. */
 function clean(s: string | undefined): string {
   return !s || s === "<Null>" ? "" : s;
@@ -52,10 +58,11 @@ function main() {
   const csv = process.argv[2];
   if (!csv) throw new Error("Usage: npm run data:nhac -- /path/to/file.csv");
   // Strip a byte-order mark, which Excel adds to CSVs
-  const rows = parseCsv(readFileSync(csv, "utf8").replace(/^﻿/, ""));
+  const rows = parseCsv(readFileSync(csv, "utf8").replace(/^\uFEFF/, ""));
 
   let skipped = 0;
-  const features = rows.flatMap((r) => {
+  const features = rows.flatMap((raw) => {
+    const r = { ...raw, ...CORRECTIONS[raw["Name"]] };
     const lat = Number(r["Lat"]);
     const lon = Number(r["Long"]);
     const [w, s, e, n] = NYC_BBOX;
