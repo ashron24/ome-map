@@ -3,6 +3,7 @@
  * Fetches DYCD Program Sites from NYC Open Data and saves as GeoJSON.
  * Output: public/data/pois/dycd-sites.geojson
  */
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 

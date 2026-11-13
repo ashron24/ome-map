@@ -3,6 +3,7 @@
  * Fetches SBS Service Locations from NYC Open Data and saves as GeoJSON.
  * Output: public/data/pois/sbs-sites.geojson
  */
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 

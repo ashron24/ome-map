@@ -209,7 +209,10 @@ The **OME MAP** title is an SVG (`public/ome-map-title.svg`) exported from Canva
 
 ## Deploy to GitHub Pages
 
-`.github/workflows/deploy.yml` builds and publishes the site on every push to `main`. It clones `nyc-geography-crosswalks` (and downloads its latest `all_boundaries.geojson` release asset), runs every ETL — each one is allowed to fail without blocking the deploy — then `vite build`, then deploys `dist/` to GitHub Pages. The boundaries and POI ETLs retry a failed download a few times, so a brief network error on the build machine doesn't drop a layer.
+`.github/workflows/deploy.yml` builds and publishes the site on every push to `main`. It clones `nyc-geography-crosswalks` (and downloads its latest `all_boundaries.geojson` release asset), runs every ETL — each one is allowed to fail without blocking the deploy — then `vite build`, then deploys `dist/` to GitHub Pages. NYC Open Data often answers 503 for a while, so two things keep that from dropping layers:
+
+- Every fetch script imports `scripts/lib/retryFetch.ts`, which retries server errors (5xx, 429) and network failures after 5, 15 and 30 seconds.
+- `public/data/` is kept in the Actions cache between deploys. Each deploy starts from the last saved copy, and a script only overwrites its file when its download succeeds, so a dataset that still fails keeps its previous data instead of disappearing from the site.
 
 Setup:
 
@@ -218,7 +221,7 @@ Setup:
 3. In **Settings → Pages**, set **Source: GitHub Actions**.
 4. Optional: set the repo variable `VITE_BASE_PATH=/` if deploying to a user/org site or custom domain at root (defaults to `/<repo>/`).
 
-Open-data source URLs are stable but can move — if an ETL starts failing, check that the dataset still exists at the same Socrata 4×4 ID. Because ETL failures don't fail the build, check the workflow logs for `[deploy] … skipped` lines if a layer goes blank.
+Open-data source URLs are stable but can move — if an ETL starts failing, check that the dataset still exists at the same Socrata 4×4 ID. Because ETL failures don't fail the build, check the workflow logs for `[deploy] … skipped` and `FAIL` lines to see which datasets are going stale; a layer only goes blank if its data has never been fetched successfully since the cache was last cleared.
 
 ## Repository layout
 
@@ -253,7 +256,9 @@ ome-map/
 │   ├── convert_outreach_events.ts # event submissions shapefile → outreach-events.geojson
 │   ├── convert_ome_events.ts      # OME event sessions CSV → ome-events.geojson
 │   ├── convert_nhac.ts            # Health Action Centers CSV → nhac-sites.geojson
-│   └── lib/csv.ts                 # CSV reading shared by the convert scripts
+│   └── lib/
+│       ├── csv.ts                 # CSV reading shared by the convert scripts
+│       └── retryFetch.ts          # makes fetch retry 5xx/429 and network errors (imported by every fetch script)
 └── src/
     ├── main.ts                    # entry, map init, opening view, URL state
     ├── style.css

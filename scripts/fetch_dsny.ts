@@ -5,6 +5,7 @@
  * boundaries path (build_boundaries or fetch_boundaries) ran first.
  * Output: public/data/boundaries/dsny.geojson
  */
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 

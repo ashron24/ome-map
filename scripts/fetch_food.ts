@@ -3,6 +3,7 @@
  * Fetches soup kitchens and food pantries from NYC DCP FacDB and saves as GeoJSON.
  * Output: public/data/pois/food-sites.geojson
  */
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 

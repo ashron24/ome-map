@@ -3,6 +3,7 @@
  * Fetches NYC Community-Based Organizations from NYC Open Data and saves as GeoJSON.
  * Output: public/data/pois/cbo-sites.geojson
  */
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 

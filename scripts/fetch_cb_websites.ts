@@ -3,6 +3,7 @@
  * Fetches NYC Community Board website URLs and saves a nameCol→url lookup.
  * Output: public/data/cd-websites.json
  */
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 

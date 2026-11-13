@@ -1,10 +1,11 @@
 #!/usr/bin/env tsx
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const TARGET = join(process.cwd(), "public/data/heatmaps");
-const FETCH_TIMEOUT_MS = 120_000;
-const MAX_RETRIES = 3;
+// Waiting for a response, retries included (lib/retryFetch.ts handles those)
+const FETCH_TIMEOUT_MS = 180_000;
 
 // MapPLUTO (NYC Planning, 64uk-42ks) — authoritative BBL → centroid lookup
 const PLUTO_ID = "64uk-42ks";
@@ -95,32 +96,20 @@ const DATASETS: Dataset[] = [
   },
 ];
 
-async function fetchWithRetry(url: string): Promise<Response> {
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-    try {
-      const res = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(t);
-      return res;
-    } catch (err) {
-      clearTimeout(t);
-      lastErr = err;
-      if (attempt < MAX_RETRIES) {
-        const delay = attempt * 3000;
-        process.stdout.write(`    retry ${attempt}/${MAX_RETRIES - 1} in ${delay / 1000}s...\n`);
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    }
+async function fetchWithTimeout(url: string): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
   }
-  throw lastErr;
 }
 
 async function fetchPLUTOCentroids(): Promise<Map<string, [number, number]>> {
   console.log("  fetching MapPLUTO BBL centroids (paginated)...");
 
-  const countRes = await fetchWithRetry(
+  const countRes = await fetchWithTimeout(
     `https://data.cityofnewyork.us/resource/${PLUTO_ID}.json?$select=count(*)&$where=latitude IS NOT NULL`,
   );
   if (!countRes.ok) throw new Error(`MapPLUTO count: HTTP ${countRes.status}`);
@@ -135,7 +124,7 @@ async function fetchPLUTOCentroids(): Promise<Map<string, [number, number]>> {
   for (let i = 0; i < pages; i += CONCURRENCY) {
     const batch = Array.from({ length: Math.min(CONCURRENCY, pages - i) }, (_, j) => {
       const offset = (i + j) * PLUTO_PAGE;
-      return fetchWithRetry(
+      return fetchWithTimeout(
         `https://data.cityofnewyork.us/resource/${PLUTO_ID}.json?$limit=${PLUTO_PAGE}&$offset=${offset}&$select=bbl,latitude,longitude&$where=latitude IS NOT NULL`,
       ).then(async (res) => {
         if (!res.ok) throw new Error(`MapPLUTO page offset=${offset}: HTTP ${res.status}`);
@@ -171,7 +160,7 @@ async function main() {
   for (const ds of DATASETS) {
     const t0 = Date.now();
     try {
-      const res = await fetchWithRetry(ds.url);
+      const res = await fetchWithTimeout(ds.url);
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text().then((t) => t.slice(0, 200))}`);
       const rows = (await res.json()) as Array<Record<string, string>>;
 

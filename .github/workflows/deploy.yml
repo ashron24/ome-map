@@ -55,6 +55,17 @@ jobs:
           fi
         continue-on-error: true
 
+      # Start from the data the last deploy saved. Each fetch script only
+      # overwrites its file when the download succeeds, so a dataset that
+      # fails (NYC Open Data often answers 503) keeps its last good copy
+      # instead of disappearing from the site.
+      - name: Restore last good data
+        uses: actions/cache/restore@v4
+        with:
+          path: public/data
+          key: data-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: data-
+
       - name: Build data
         env:
           # CENSUS_API_KEY is required for the demographics (ACS) layer.
@@ -76,6 +87,12 @@ jobs:
           npm run data:universities || echo "[deploy] universities skipped"
           npm run data:cb-websites || echo "[deploy] cb-websites skipped"
           npm run data:officials || echo "[deploy] officials skipped"
+
+      - name: Save data for the next deploy
+        uses: actions/cache/save@v4
+        with:
+          path: public/data
+          key: data-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Build site
         env:

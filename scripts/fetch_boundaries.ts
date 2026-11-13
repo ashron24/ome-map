@@ -7,6 +7,7 @@
  * Each feature has a `nameCol` property (used by layers.ts for labels + promoteId)
  * and optionally a `nameAlt` property.
  */
+import "./lib/retryFetch.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -153,28 +154,12 @@ const BOUNDARIES: BoundaryDef[] = [
 // DSNY sanitation districts are not currently available via the Planning ArcGIS
 // service or NYC Open Data GeoJSON API; skipped until a working source is found.
 
-const MAX_RETRIES = 3;
-
-// Retry network errors (e.g. a dropped connection on the CI runner)
-async function fetchWithRetry(url: string): Promise<Response> {
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await fetch(url);
-    } catch (err) {
-      lastErr = err;
-      if (attempt < MAX_RETRIES) await new Promise((r) => setTimeout(r, attempt * 2000));
-    }
-  }
-  throw lastErr;
-}
-
 async function fetchBoundary(
   def: BoundaryDef,
 ): Promise<{ id: string; count: number; bytes: number } | { id: string; error: string }> {
   const t0 = Date.now();
   try {
-    const res = await fetchWithRetry(def.url);
+    const res = await fetch(def.url);
     if (!res.ok) throw new Error(`HTTP ${res.status} from ${def.url}`);
     const fc = (await res.json()) as FeatureCollection;
 
