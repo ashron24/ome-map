@@ -20,6 +20,7 @@ export type POIId =
   | "subway-stations"
   | "bus-routes"
   | "outreach-events"
+  | "ome-events"
   | "nhac-sites"
   | "dycd-sites"
   | "sbs-sites"
@@ -493,6 +494,38 @@ export const POIS: POIDef[] = [
       { key: "link", label: "Link" },
     ],
     attribution: { name: "NYC Mayor's Office of Mass Engagement", href: "https://www.nyc.gov/content/organize" },
+  },
+  {
+    id: "ome-events",
+    label: "OME Events & Canvasses",
+    group: "events",
+    // Converted from an event sessions export by `npm run data:ome-events`
+    source: dataUrl("ome-events.geojson"),
+    geomType: "point",
+    color: "#1D4ED8",
+    // Blue pins in the Organize NYC style: a building for canvasses, an apple for events and NYC 101
+    legend: [
+      { label: "Canvassing", color: "#1D4ED8", icon: "icons/ome-canvass.png" },
+      { label: "Event / NYC 101", color: "#1D4ED8", icon: "icons/ome-event.png" },
+    ],
+    iconByCategory: {
+      prop: "icon_group",
+      icons: [["canvass", "icons/ome-canvass.png"], ["event", "icons/ome-event.png"]],
+    },
+    // Map pins: the tip sits on the location (SVG sources are next to the PNGs)
+    iconAnchor: "bottom",
+    iconSize: ["interpolate", ["linear"], ["zoom"], 10, 1.1, 13, 1.5, 15, 2, 18, 3],
+    popupFields: [
+      { key: "name", label: "Event" },
+      { key: "date", label: "Date" },
+      { key: "time", label: "Time" },
+      { key: "event_type", label: "Type" },
+      { key: "campaign", label: "Campaign" },
+      { key: "location", label: "Location" },
+      { key: "address", label: "Address" },
+      { key: "neighborhood", label: "Neighborhood" },
+    ],
+    attribution: { name: "NYC Mayor's Office of Mass Engagement", href: "https://www.nyc.gov/content/organize/pages/events" },
   },
   {
     id: "dycd-sites",

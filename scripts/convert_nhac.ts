@@ -8,40 +8,12 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { clean, parseCsv, stripBom } from "./lib/csv.ts";
 
 const TARGET = join(process.cwd(), "public/nhac-sites.geojson");
 
 // Generous NYC bounding box: [west, south, east, north]
 const NYC_BBOX = [-74.3, 40.45, -73.65, 40.95];
-
-/** Rows of a CSV file as objects keyed by header; handles quoted fields. */
-function parseCsv(text: string): Record<string, string>[] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = "";
-  let quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') { field += '"'; i++; }
-      else if (ch === '"') quoted = false;
-      else field += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === ",") { row.push(field); field = ""; }
-    else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
-      row.push(field); field = "";
-      if (row.some((f) => f.trim())) rows.push(row);
-      row = [];
-    } else field += ch;
-  }
-  row.push(field);
-  if (row.some((f) => f.trim())) rows.push(row);
-
-  const [header, ...data] = rows;
-  const keys = header.map((h) => h.trim());
-  return data.map((r) => Object.fromEntries(keys.map((k, i) => [k, (r[i] ?? "").trim()])));
-}
 
 // Typos in the source CSV (as of Nov 2026), by center name; applied on every run
 const CORRECTIONS: Record<string, Record<string, string>> = {
@@ -49,16 +21,10 @@ const CORRECTIONS: Record<string, Record<string, string>> = {
   "Tremont Neighborhood Health Action Center": { Address: "1826 Arthur Avenue" }, // was "Arthure"
 };
 
-/** Empty for blanks and the "<Null>" that ArcGIS exports write for missing values. */
-function clean(s: string | undefined): string {
-  return !s || s === "<Null>" ? "" : s;
-}
-
 function main() {
   const csv = process.argv[2];
   if (!csv) throw new Error("Usage: npm run data:nhac -- /path/to/file.csv");
-  // Strip a byte-order mark, which Excel adds to CSVs
-  const rows = parseCsv(readFileSync(csv, "utf8").replace(/^\uFEFF/, ""));
+  const rows = parseCsv(stripBom(readFileSync(csv, "utf8")));
 
   let skipped = 0;
   const features = rows.flatMap((raw) => {
