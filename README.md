@@ -27,7 +27,7 @@ Other features:
   - Public Schools and Colleges & Universities, recolored per category (e.g. Public vs. Charter School)
   - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
   - SBS Program Sites: a large map pin in each location type's color, with the pin's tip on the site
-  - DOHMH Neighborhood Health Action Centers: a magenta map pin, with the tip on the center
+  - DOHMH Neighborhood Health Action Centers: the same pin in teal, at the same size
   - Agency Events & Outreach: a star in each event type's color
   - OME Events & Canvasses: blue map pins in the Organize NYC style, a blue building for canvasses and a red apple for events and NYC 101, with the pin's tip on the location
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
@@ -109,7 +109,7 @@ A data source isn't always well-formed: the ArcGIS GeoJSON export sometimes retu
 
 | File | What it is |
 |---|---|
-| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `marker-magenta` (Health Action Centers), `star` (Agency Events & Outreach), `ome-canvass` and `ome-event` (OME Events & Canvasses pins; their SVG sources sit next to them), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
+| `icons/*.png` | Point-layer icons: `library` (book), `school` (schoolhouse), `university` (columned building), `linknyc` (Wi-Fi), `hospital` (H), `clinic` (C), `pin` (SBS sites), `pin-teal` (Health Action Centers), `star` (Agency Events & Outreach), `ome-canvass` and `ome-event` (OME Events & Canvasses pins; their SVG sources sit next to them), `soup-kitchen` (ladle), `food-pantry` (shopping cart). Most are single-color shapes recolored per category at runtime (`iconTint`). |
 | `ome-map-title.svg` | Panel title lettering, exported from Canva in the Pintazo typeface (see [Title](#title)) |
 | `fonts/union_gothic-variable.ttf` | Union Gothic, self-hosted from NYC.gov; the previous panel title font, still styled in `src/style.css` |
 | `logo.jpeg` | Mayor's Office of Mass Engagement logo (top right, links to the office's site) |

@@ -72,6 +72,9 @@ const ICON_SIZE: ExpressionSpecification =
 // For dense icon layers: much smaller zoomed out, same size zoomed in
 const SMALL_START_ICON_SIZE: ExpressionSpecification =
   ["interpolate", ["linear"], ["zoom"], 10, 0.35, 12, 0.55, 14, 1, 16, 1.6, 18, 2.25]; // ≈6 → 36 px
+// Map pins (SBS sites, Health Action Centers): about twice the size of other icons
+const PIN_ICON_SIZE: ExpressionSpecification =
+  ["interpolate", ["linear"], ["zoom"], 10, 1.5, 13, 2, 15, 2.6, 18, 3.75];
 const DOT_RADIUS: ExpressionSpecification =
   ["interpolate", ["linear"], ["zoom"], 10, 3, 13, 5, 15, 8, 18, 13];
 const HOLLOW_DOT_RADIUS: ExpressionSpecification =
@@ -564,8 +567,7 @@ export const POIS: POIDef[] = [
     icon: "icons/pin.png",
     iconTint: { prop: "location_type", colors: SBS_TYPE_COLORS, fallback: "#888888" },
     iconAnchor: "bottom",
-    // Pins are about twice the size of other icons, zoomed in or out
-    iconSize: ["interpolate", ["linear"], ["zoom"], 10, 1.5, 13, 2, 15, 2.6, 18, 3.75],
+    iconSize: PIN_ICON_SIZE,
     popupFields: [
       { key: "name", label: "Site" },
       { key: "location_type", label: "Type" },
@@ -586,10 +588,11 @@ export const POIS: POIDef[] = [
     group: "sites",
     source: dataUrl("nhac-sites.geojson"),
     geomType: "point",
-    color: "#D81B60",
-    // Map pin: the tip sits on the center
-    icon: "icons/marker-magenta.png",
+    color: "#00838F",
+    // The SBS pin in teal (a color no SBS location type uses), at the same size
+    icon: "icons/pin-teal.png",
     iconAnchor: "bottom",
+    iconSize: PIN_ICON_SIZE,
     popupFields: [
       { key: "name", label: "Center" },
       { key: "address", label: "Address" },
