@@ -521,8 +521,11 @@ html, body {
   left: 282px;
   right: 396px;
   z-index: 6;
+  /* One bar per filtered layer, stacked when several are on */
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   pointer-events: none;
 }
 
@@ -722,6 +725,13 @@ html, body {
   mask-position: center;
 }
 
+/* A layer's own icon (e.g. a map pin) before a value */
+.ef-swatch-img {
+  height: 16px;
+  width: auto;
+  flex-shrink: 0;
+}
+
 .ef-option-label {
   flex: 1;
   white-space: nowrap;
@@ -822,7 +832,7 @@ html, body {
   #event-filter-root {
     top: 112px;
     right: 10px;
-    justify-content: flex-end;
+    align-items: flex-end;
   }
 }
 
@@ -833,7 +843,7 @@ html, body {
     bottom: 104px;
     left: 8px;
     right: 8px;
-    justify-content: center;
+    align-items: center;
   }
   .ef-pop {
     top: auto;

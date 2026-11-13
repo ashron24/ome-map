@@ -9,23 +9,12 @@ export type AppState = {
   heatmaps: Set<string>;
   metric?: string;
   ethnicities: Set<string>;
-  /** Events & Outreach filter; only set while the filter narrows the layer */
-  eventFilter?: EventFilterParams;
+  /** Filter bar fields (two-letter keys such as et, ed), only for layers that are on */
+  filters: Record<string, string>;
 };
-
-export type EventFilterParams = {
-  types: string[];
-  agencies: string[];
-  from: string; // YYYY-MM-DD or ""
-  to: string;
-  minAudience: number | null;
-  maxAudience: number | null;
-};
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function emptyState(): AppState {
-  return { districts: new Set(), pois: new Set(), heatmaps: new Set(), ethnicities: new Set() };
+  return { districts: new Set(), pois: new Set(), heatmaps: new Set(), ethnicities: new Set(), filters: {} };
 }
 
 export function parseHash(hash: string): AppState {
@@ -67,7 +56,8 @@ export function parseHash(hash: string): AppState {
   const e = params.get("e");
   if (e) for (const id of e.split(",").filter(Boolean)) state.ethnicities.add(id);
 
-  state.eventFilter = parseEventFilter(params);
+  // Filter bar fields use two-letter keys; ui/eventFilter.ts checks their values
+  for (const [k, v] of params) if (k.length === 2 && v) state.filters[k] = v;
 
   return state;
 }
@@ -97,44 +87,9 @@ export function buildHash(state: AppState): string {
   if (state.ethnicities.size > 0) {
     params.set("e", [...state.ethnicities].sort().join(","));
   }
-  const f = state.eventFilter;
-  if (f) {
-    if (f.types.length) params.set("et", [...f.types].sort().join(","));
-    if (f.agencies.length) params.set("ea", [...f.agencies].sort().join(","));
-    if (f.from || f.to) params.set("ed", `${f.from}..${f.to}`);
-    if (f.minAudience !== null || f.maxAudience !== null) {
-      params.set("eu", `${f.minAudience ?? ""}..${f.maxAudience ?? ""}`);
-    }
-  }
+  for (const k of Object.keys(state.filters).sort()) params.set(k, state.filters[k]);
 
   return params.toString();
-}
-
-/**
- * Events & Outreach filter: et=types, ea=agencies (comma-separated),
- * ed=from..to dates and eu=min..max audience (either end may be empty).
- */
-function parseEventFilter(params: URLSearchParams): EventFilterParams | undefined {
-  const list = (key: string) => (params.get(key) ?? "").split(",").map((v) => v.trim()).filter(Boolean);
-  const range = (key: string) => {
-    const [lo = "", hi = ""] = (params.get(key) ?? "").split("..");
-    return [lo, hi];
-  };
-  const num = (v: string) => (v !== "" && Number.isFinite(Number(v)) ? Number(v) : null);
-
-  const [from, to] = range("ed");
-  const [min, max] = range("eu");
-  const f: EventFilterParams = {
-    types: list("et"),
-    agencies: list("ea"),
-    from: ISO_DATE.test(from) ? from : "",
-    to: ISO_DATE.test(to) ? to : "",
-    minAudience: num(min),
-    maxAudience: num(max),
-  };
-  const active = f.types.length || f.agencies.length || f.from || f.to ||
-    f.minAudience !== null || f.maxAudience !== null;
-  return active ? f : undefined;
 }
 
 export function writeHash(state: AppState): void {

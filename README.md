@@ -28,17 +28,19 @@ Other features:
   - Hospitals (indigo **H**) and Clinics (dark-red **C**); hospitals are larger and drawn on top
   - SBS Program Sites: a large map pin in each location type's color, with the pin's tip on the site
   - Events & Outreach: a star in each event type's color
-  - OME Events & Canvasses: blue map pins in the Organize NYC style, a building for canvasses and an apple for events and NYC 101, with the pin's tip on the location
+  - OME Events & Canvasses: blue map pins in the Organize NYC style, a blue building for canvasses and a red apple for events and NYC 101, with the pin's tip on the location
   - Soup Kitchens (red ladle, larger and drawn on top) and Food Pantries (blue shopping cart)
 
   All icons and dots keep growing as you zoom in, and dense layers (schools, clinics, LinkNYC) start extra small when zoomed out.
-- **Events & Outreach filter** — while the Events & Outreach layer is on, a bar at the top of the map filters it by **event type**, **date** (from/to, or Upcoming / Next 30 days / Past), **agency** and **approximate audience** (at least / at most, or 50+ … 1,000+). Within one attribute any checked value matches; across attributes all must match. The bar shows how many events match (e.g. "3 of 12 events") and **Clear** resets everything. The green download button exports the events that match (all of them when nothing is filtered) to an Excel spreadsheet (`.xlsx`), sorted by date, with every popup field plus the address and coordinates; the file is built in the browser by `src/util/xlsx.ts`, which needs no library. The filter is kept when the layer is turned off and on, or the basemap changes, and it is part of the shareable link (see Permalinks). On phones the bar sits just above the search box (see `src/ui/eventFilter.ts`).
+- **Event filter bars** — while an event layer is on, a bar at the top of the map filters it; with both layers on, the bars stack. Within one attribute any checked value matches; across attributes all must match. Each bar shows how many features match (e.g. "3 of 12 events"), **Clear** resets it, and the green download button exports what it shows (all of it when nothing is filtered) to an Excel spreadsheet (`.xlsx`), sorted by date; the file is built in the browser by `src/util/xlsx.ts`, which needs no library. Filters are kept when a layer is turned off and on, or the basemap changes, and are part of the shareable link (see Permalinks). On phones the bars sit just above the search box. Each bar is a `FilterConfig` in `src/ui/eventFilter.ts`:
+  - **Events & Outreach**: **event type**, **date** (from/to, or Upcoming / Next 30 days / Past), **agency** and **approximate audience** (at least / at most, or 50+ … 1,000+)
+  - **OME Events & Canvasses**: **event type** (Canvassing, Event, NYC 101), **date**, **campaign** and **neighborhood**
 - **Polygon labels follow the view** — each district and neighborhood is labelled once, and when only part of an area is on screen its label moves into the visible part if it fits there. Labels also stay out from under the layer menu (see `src/map/dynamicLabels.ts`). District labels carry a short prefix where the name is just a number (CC, SS, AD, CG, PP, SD, FB); BIDs, Historic Districts, neighborhoods and ZIP codes use smaller labels.
 - **Park labels** — parks of 5+ acres are labelled from zoom 13 and all parks from zoom 14.5; parcels named just "Park" (mostly road medians) are never labelled.
 - **Subway station names** appear from zoom 13.5.
 - **District popups** show elected officials for council / state / congressional districts, and Community Board contact info, meeting details and a website link (from `scripts/data/officials.csv` plus NYC Open Data).
 - **Search** (top right) matches neighborhoods, boroughs and ZIP codes locally; full address search uses NYC Geoclient when a key is configured.
-- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. While the Events & Outreach layer is on, its filter is in the link too: `et` (event types) and `ea` (agencies), comma-separated, `ed` (dates, `from..to`) and `eu` (audience, `min..max`); either end of a range may be empty, e.g. `eu=100..`. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
+- **Permalinks** — the URL hash encodes the view (center, zoom, basemap, and every active layer), so any map state can be shared by copying the URL. Layers turned on by a link show as checked in the menu. While an event layer is on, its filter is in the link too, under two-letter keys. Events & Outreach: `et` (event types) and `ea` (agencies), comma-separated, `ed` (dates, `from..to`) and `eu` (audience, `min..max`). OME Events & Canvasses: `ot` (event types), `od` (dates), `oc` (campaigns) and `on` (neighborhoods). Either end of a range may be empty, e.g. `eu=100..`; values a link names that aren't in the data are ignored. Without a hash, the map opens on all five boroughs (`NYC_CENTER` / `NYC_ZOOM` in `src/main.ts`).
 - **Legends** — category legends (with the icon or color dot) under active POI layers, and a legend for the active choropleth.
 - **Logo and browser tab** — the logo (top right) links to the Mayor's Office of Mass Engagement site (`index.html`), and is also the browser-tab icon (`public/favicon.png`, `public/apple-touch-icon.png`) next to the "OME Map" page title.
 
@@ -270,7 +272,7 @@ ome-map/
     ├── ui/
     │   ├── layerPanel.ts          # left-side layer menu (title roll-up, legends)
     │   ├── search.ts              # search box
-    │   └── eventFilter.ts         # Events & Outreach filter bar
+    │   └── eventFilter.ts         # filter bars for the event layers (one FilterConfig per layer)
     ├── state/
     │   └── urlState.ts            # permalink (#-fragment) encoding/decoding
     └── util/

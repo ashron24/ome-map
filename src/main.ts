@@ -34,7 +34,7 @@ import {
 } from "./map/heatmaps.ts";
 import { mountLayerPanel } from "./ui/layerPanel.ts";
 import { mountSearch } from "./ui/search.ts";
-import { mountEventFilter } from "./ui/eventFilter.ts";
+import { FILTERS, mountEventFilter } from "./ui/eventFilter.ts";
 import type { EventFilterHandle } from "./ui/eventFilter.ts";
 import {
   debounce,
@@ -102,14 +102,14 @@ function snapshotState(): AppState {
     heatmaps: state.heatmaps,
     metric: state.metric,
     ethnicities: state.ethnicities,
-    // Only while the layer is on, so a link never carries a filter for a hidden layer
-    eventFilter: state.pois.has("outreach-events") ? eventFilter?.params() : undefined,
+    // Only for layers that are on, so a link never carries a filter for a hidden layer
+    filters: Object.assign({}, ...eventFilters.filter((f) => state.pois.has(f.layer)).map((f) => f.params())),
   };
 }
 
 const persist = debounce(() => writeHash(snapshotState()), 250);
 
-let eventFilter: EventFilterHandle | null = null;
+let eventFilters: EventFilterHandle[] = [];
 
 map.on("moveend", persist);
 
@@ -239,11 +239,12 @@ if (panelEl) setLabelOccluder(map, panelEl);
 const searchRoot = document.getElementById("search-root");
 if (searchRoot) mountSearch(map, searchRoot);
 
-// Before applyInitialLayers, so a shared link that turns the layer on shows the bar
+// Before applyInitialLayers, so a shared link that turns a layer on shows its bar
 const eventFilterRoot = document.getElementById("event-filter-root");
-eventFilter = eventFilterRoot
-  ? mountEventFilter(map, eventFilterRoot, { initial: initialState.eventFilter, onChange: persist })
-  : null;
+eventFilters = eventFilterRoot
+  ? FILTERS.map((config) =>
+    mountEventFilter(map, eventFilterRoot, config, { initial: initialState.filters, onChange: persist }))
+  : [];
 
 // applyInitialLayers needs the style to be ready first.
 map.once("style.load", () => void applyInitialLayers());

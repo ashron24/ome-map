@@ -1,8 +1,8 @@
 /**
- * Filter bar for the Events & Outreach layer, shown at the top of the map
- * while the layer is on. Filters by event type, date range, agency and
- * audience size: any checked value within one attribute, all attributes
- * together.
+ * Filter bars for event layers, shown at the top of the map while their layer
+ * is on. Each bar filters its layer by the fields in its FilterConfig (a
+ * checklist, a date range or a number range): any checked value within one
+ * field, all fields together. Each bar also exports what it shows to Excel.
  *
  * Matching is decided here, once, and the layer is told which features to
  * draw by their generated ids (their index in the GeoJSON), so the count in
@@ -10,67 +10,176 @@
  */
 import type { Map as MlMap, FilterSpecification } from "maplibre-gl";
 import { POIS, onPOIVisibilityChange, setPOIFilter } from "../map/pois.ts";
-import type { POIId } from "../map/pois.ts";
+import type { POIDef, POIId } from "../map/pois.ts";
 import { dataUrl } from "../util/url.ts";
-import type { EventFilterParams } from "../state/urlState.ts";
+import type { Cell, Column } from "../util/xlsx.ts";
 
-const LAYER_ID: POIId = "outreach-events";
+type Props = Record<string, unknown>;
 
-type EventProps = {
-  name?: string;
-  date_iso?: string;
-  event_type?: string;
-  agency?: string;
-  location?: string;
-  address?: string;
-  audience?: number | null;
-  details?: string;
-  link?: string;
+type Field =
+  | {
+    kind: "choice";
+    /** URL hash key holding the checked values, comma-separated */
+    key: string;
+    label: string;
+    prop: string;
+    /** The property holds several comma-separated values, e.g. "SBS, FDNY" */
+    multi?: boolean;
+    /** Show how many features have each value */
+    counts?: boolean;
+    /** Size the dropdown to its values instead of the usual minimum width */
+    narrow?: boolean;
+    /** Values listed first, in this order; the rest follow alphabetically */
+    order?: (def: POIDef) => string[];
+    /** A small symbol before each value */
+    swatch?: (value: string, def: POIDef) => HTMLElement | null;
+  }
+  | { kind: "date"; key: string; label: string; prop: string }
+  | { kind: "number"; key: string; label: string; prop: string; presets: number[] };
+
+type ExportColumn = Column & { value: (p: Props, f: GeoJSON.Feature) => Cell };
+
+export type FilterConfig = {
+  layer: POIId;
+  /** Shown at the start of the bar */
+  title: string;
+  /** Plural noun in the count, e.g. "12 events" */
+  noun: string;
+  fields: Field[];
+  export: { sheet: string; file: string; columns: ExportColumn[] };
 };
 
-type Event = {
-  type: string;
-  agencies: string[];
-  date: string; // YYYY-MM-DD, or "" when unknown
-  audience: number | null;
-  props: EventProps; // for the spreadsheet export
-  coords: [number, number] | null;
-};
+const str = (p: Props, k: string) => (typeof p[k] === "string" ? (p[k] as string) : "");
+const lon = (_: Props, f: GeoJSON.Feature) => (f.geometry?.type === "Point" ? round6(f.geometry.coordinates[0]) : null);
+const lat = (_: Props, f: GeoJSON.Feature) => (f.geometry?.type === "Point" ? round6(f.geometry.coordinates[1]) : null);
 
-type FilterState = {
-  types: Set<string>;
-  agencies: Set<string>;
-  from: string;
-  to: string;
-  minAudience: number | null;
-  maxAudience: number | null;
-};
+/** The layer's icon as a mask, filled with the legend color for the value. */
+function tintedIconSwatch(value: string, def: POIDef): HTMLElement {
+  const s = document.createElement("span");
+  s.className = "ef-swatch";
+  s.style.backgroundColor = def.legend?.find((l) => l.label === value)?.color ?? def.color;
+  if (def.icon) {
+    const url = `url("${dataUrl(def.icon)}")`;
+    s.style.maskImage = url;
+    s.style.webkitMaskImage = url;
+  }
+  return s;
+}
 
-const AUDIENCE_PRESETS = [50, 100, 500, 1000];
+/** The icon the layer draws for one of its iconByCategory categories. */
+function categoryIconSwatch(category: string, def: POIDef): HTMLElement | null {
+  const icon = def.iconByCategory?.icons.find(([k]) => k === category)?.[1];
+  if (!icon) return null;
+  const img = document.createElement("img");
+  img.className = "ef-swatch-img";
+  img.src = dataUrl(icon);
+  img.alt = "";
+  return img;
+}
+
+export const FILTERS: FilterConfig[] = [
+  {
+    layer: "outreach-events",
+    title: "Filter events",
+    noun: "events",
+    fields: [
+      {
+        kind: "choice", key: "et", label: "Event type", prop: "event_type", counts: true,
+        order: (def) => (def.legend ?? []).map((l) => l.label),
+        swatch: tintedIconSwatch,
+      },
+      { kind: "date", key: "ed", label: "Date", prop: "date_iso" },
+      { kind: "choice", key: "ea", label: "Agency", prop: "agency", multi: true, narrow: true },
+      { kind: "number", key: "eu", label: "Audience", prop: "audience", presets: [50, 100, 500, 1000] },
+    ],
+    export: {
+      sheet: "Events & Outreach",
+      file: "events-outreach",
+      columns: [
+        { header: "Event", width: 40, value: (p) => str(p, "name") },
+        { header: "Date", width: 17, value: (p) => (str(p, "date_iso") ? { date: str(p, "date_iso") } : null) },
+        { header: "Event Type", width: 26, value: (p) => str(p, "event_type") },
+        { header: "Agency", width: 18, value: (p) => str(p, "agency") },
+        { header: "Location", width: 36, value: (p) => str(p, "location") },
+        { header: "Address", width: 36, value: (p) => str(p, "address") },
+        { header: "Approx. Audience", width: 16, value: (p) => (typeof p.audience === "number" ? p.audience : null) },
+        { header: "Details", width: 60, value: (p) => str(p, "details") },
+        { header: "Link", width: 36, value: (p) => (str(p, "link") ? { link: str(p, "link") } : null) },
+        { header: "Latitude", width: 11, value: lat },
+        { header: "Longitude", width: 11, value: lon },
+      ],
+    },
+  },
+  {
+    layer: "ome-events",
+    title: "Filter OME events",
+    noun: "sessions",
+    fields: [
+      {
+        kind: "choice", key: "ot", label: "Event type", prop: "event_type", counts: true,
+        order: () => ["Canvassing", "Event", "NYC 101"],
+        // Canvassing has the building pin; Event and NYC 101 the apple
+        swatch: (value, def) => categoryIconSwatch(value === "Canvassing" ? "canvass" : "event", def),
+      },
+      { kind: "date", key: "od", label: "Date", prop: "date_iso" },
+      { kind: "choice", key: "oc", label: "Campaign", prop: "campaign", narrow: true },
+      { kind: "choice", key: "on", label: "Neighborhood", prop: "neighborhood", narrow: true },
+    ],
+    export: {
+      sheet: "OME Events & Canvasses",
+      file: "ome-events-canvasses",
+      columns: [
+        { header: "Event", width: 44, value: (p) => str(p, "name") },
+        { header: "Date", width: 17, value: (p) => (str(p, "date_iso") ? { date: str(p, "date_iso") } : null) },
+        { header: "Time", width: 18, value: (p) => str(p, "time") },
+        { header: "Type", width: 12, value: (p) => str(p, "event_type") },
+        { header: "Campaign", width: 16, value: (p) => str(p, "campaign") },
+        { header: "Location", width: 36, value: (p) => str(p, "location") },
+        { header: "Address", width: 44, value: (p) => str(p, "address") },
+        { header: "Neighborhood", width: 22, value: (p) => str(p, "neighborhood") },
+        { header: "Latitude", width: 11, value: lat },
+        { header: "Longitude", width: 11, value: lon },
+      ],
+    },
+  },
+];
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export type EventFilterHandle = {
-  /** The current filter for a shareable link, or undefined when it shows every event */
-  params(): EventFilterParams | undefined;
+  layer: POIId;
+  /** Hash params for a shareable link: only the fields that narrow the layer */
+  params(): Record<string, string>;
 };
+
+/** Per-field filter state: checked values, or a from/to range */
+type FieldState =
+  | { kind: "choice"; selected: Set<string> }
+  | { kind: "range"; lo: string; hi: string }; // dates as YYYY-MM-DD, numbers as text; "" = open
 
 export function mountEventFilter(
   map: MlMap,
   root: HTMLElement,
-  opts: { initial?: EventFilterParams; onChange: () => void },
+  config: FilterConfig,
+  opts: { initial: Record<string, string>; onChange: () => void },
 ): EventFilterHandle {
-  const def = POIS.find((p) => p.id === LAYER_ID);
-  if (!def) return { params: () => undefined };
+  const def = POIS.find((p) => p.id === config.layer);
+  if (!def) return { layer: config.layer, params: () => ({}) };
 
-  const init = opts.initial;
-  const state: FilterState = {
-    types: new Set(init?.types),
-    agencies: new Set(init?.agencies),
-    from: init?.from ?? "",
-    to: init?.to ?? "",
-    minAudience: init?.minAudience ?? null,
-    maxAudience: init?.maxAudience ?? null,
-  };
-  let events: Event[] | null = null;
+  // Starting state from a shared link; bad values are dropped
+  const states: FieldState[] = config.fields.map((f) => {
+    const raw = opts.initial[f.key] ?? "";
+    if (f.kind === "choice") {
+      return { kind: "choice", selected: new Set(raw.split(",").map((v) => v.trim()).filter(Boolean)) };
+    }
+    const [lo = "", hi = ""] = raw.split("..");
+    const ok = f.kind === "date"
+      ? (v: string) => ISO_DATE.test(v)
+      : (v: string) => v !== "" && Number.isFinite(Number(v));
+    return { kind: "range", lo: ok(lo) ? lo : "", hi: ok(hi) ? hi : "" };
+  });
+
+  let features: GeoJSON.Feature[] | null = null;
   let loading: Promise<void> | null = null;
 
   // ── DOM ───────────────────────────────────────────────────────────────────
@@ -78,12 +187,12 @@ export function mountEventFilter(
   const bar = document.createElement("div");
   bar.className = "event-filter";
   bar.setAttribute("role", "group");
-  bar.setAttribute("aria-label", "Filter Events & Outreach");
+  bar.setAttribute("aria-label", `Filter ${def.label}`);
   bar.hidden = true;
 
   const title = document.createElement("span");
   title.className = "ef-title";
-  title.textContent = "Filter events";
+  title.textContent = config.title;
 
   const controls = document.createElement("div");
   controls.className = "ef-controls";
@@ -98,10 +207,7 @@ export function mountEventFilter(
   clearAll.textContent = "Clear";
   clearAll.hidden = true;
   clearAll.addEventListener("click", () => {
-    state.types.clear();
-    state.agencies.clear();
-    state.from = state.to = "";
-    state.minAudience = state.maxAudience = null;
+    states.forEach(reset);
     rebuildPopovers();
     apply();
   });
@@ -113,7 +219,7 @@ export function mountEventFilter(
   exportBtn.innerHTML =
     `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">` +
     `<path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11"/></svg>`;
-  exportBtn.title = "Export to Excel: download the events shown on the map";
+  exportBtn.title = `Export to Excel: download the ${config.noun} shown on the map`;
   exportBtn.setAttribute("aria-label", "Export to Excel");
   exportBtn.disabled = true;
   exportBtn.addEventListener("click", () => void exportXlsx());
@@ -121,13 +227,12 @@ export function mountEventFilter(
   bar.append(title, controls, count, clearAll, exportBtn);
   root.appendChild(bar);
 
-  const typeCtl = control("Event type");
-  const dateCtl = control("Date");
-  const agencyCtl = control("Agency");
-  agencyCtl.pop.classList.add("ef-pop-narrow");
-  const audienceCtl = control("Audience");
-  audienceCtl.pop.classList.add("ef-pop-narrow");
-  controls.append(typeCtl.el, dateCtl.el, agencyCtl.el, audienceCtl.el);
+  const ctls = config.fields.map((f) => {
+    const c = control(f.label);
+    if ((f.kind === "choice" && f.narrow) || f.kind === "number") c.pop.classList.add("ef-pop-narrow");
+    controls.appendChild(c.el);
+    return c;
+  });
 
   /** A button with a popover under it; only one popover is open at a time. */
   function control(label: string) {
@@ -152,7 +257,7 @@ export function mountEventFilter(
   }
 
   function closeAll(): void {
-    for (const c of [typeCtl, dateCtl, agencyCtl, audienceCtl]) {
+    for (const c of ctls) {
       c.pop.hidden = true;
       c.button.setAttribute("aria-expanded", "false");
     }
@@ -169,40 +274,24 @@ export function mountEventFilter(
   // ── popover contents ──────────────────────────────────────────────────────
 
   function rebuildPopovers(): void {
-    if (!events) return;
-    const evs = events;
-
-    // Event types in legend order, then any others; only types present in the data
-    const legendOrder = (def!.legend ?? []).map((l) => l.label);
-    const colorOf = new Map((def!.legend ?? []).map((l) => [l.label, l.color]));
-    const typeCounts = tally(evs.map((e) => e.type));
-    const types = [...typeCounts.keys()].sort(
-      (a, b) => rank(legendOrder, a) - rank(legendOrder, b) || a.localeCompare(b),
-    );
-    typeCtl.pop.replaceChildren(
-      checklist(types, typeCounts, state.types, (t) => swatch(colorOf.get(t) ?? def!.color)),
-      resetButton(() => state.types.clear()),
-    );
-
-    const agencyCounts = tally(evs.flatMap((e) => e.agencies));
-    const agencies = [...agencyCounts.keys()].sort((a, b) => a.localeCompare(b));
-    agencyCtl.pop.replaceChildren(
-      checklist(agencies, null, state.agencies),
-      resetButton(() => state.agencies.clear()),
-    );
-
-    dateCtl.pop.replaceChildren(dateFields(evs), resetButton(() => { state.from = state.to = ""; }));
-    audienceCtl.pop.replaceChildren(audienceFields(), resetButton(() => {
-      state.minAudience = state.maxAudience = null;
-    }));
+    if (!features) return;
+    const props = features.map((f) => (f.properties ?? {}) as Props);
+    config.fields.forEach((f, i) => {
+      const st = states[i];
+      const body =
+        f.kind === "choice" && st.kind === "choice" ? choiceList(f, st, props)
+        : f.kind === "date" && st.kind === "range" ? dateFields(st, props.map((p) => str(p, f.prop)))
+        : f.kind === "number" && st.kind === "range" ? numberFields(f.presets, st)
+        : null;
+      if (body) ctls[i].pop.replaceChildren(body, resetButton(() => reset(st)));
+    });
   }
 
-  function checklist(
-    values: string[],
-    counts: Map<string, number> | null, // null: no count column
-    selected: Set<string>,
-    decorate?: (value: string) => HTMLElement,
-  ): HTMLElement {
+  function choiceList(f: Extract<Field, { kind: "choice" }>, st: { selected: Set<string> }, props: Props[]): HTMLElement {
+    const counts = tally(props.flatMap((p) => valuesOf(f, p)));
+    const order = f.order?.(def!) ?? [];
+    const values = [...counts.keys()].sort((a, b) => rank(order, a) - rank(order, b) || a.localeCompare(b));
+
     const list = document.createElement("div");
     list.className = "ef-list";
     for (const v of values) {
@@ -210,17 +299,18 @@ export function mountEventFilter(
       row.className = "ef-option";
       const input = document.createElement("input");
       input.type = "checkbox";
-      input.checked = selected.has(v);
+      input.checked = st.selected.has(v);
       input.addEventListener("change", () => {
-        if (input.checked) selected.add(v);
-        else selected.delete(v);
+        if (input.checked) st.selected.add(v);
+        else st.selected.delete(v);
         apply();
       });
       const text = document.createElement("span");
       text.className = "ef-option-label";
       text.textContent = v;
-      row.append(input, ...(decorate ? [decorate(v)] : []), text);
-      if (counts) {
+      const sw = f.swatch?.(v, def!);
+      row.append(input, ...(sw ? [sw] : []), text);
+      if (f.counts) {
         const n = document.createElement("span");
         n.className = "ef-option-count";
         n.textContent = String(counts.get(v) ?? 0);
@@ -231,31 +321,18 @@ export function mountEventFilter(
     return list;
   }
 
-  /** The layer's star icon in a category color. */
-  function swatch(color: string): HTMLElement {
-    const s = document.createElement("span");
-    s.className = "ef-swatch";
-    s.style.backgroundColor = color;
-    if (def!.icon) {
-      const url = `url("${dataUrl(def!.icon)}")`;
-      s.style.maskImage = url;
-      s.style.webkitMaskImage = url;
-    }
-    return s;
-  }
-
-  function dateFields(evs: Event[]): HTMLElement {
+  function dateFields(st: { lo: string; hi: string }, values: string[]): HTMLElement {
     const box = document.createElement("div");
     box.className = "ef-fields";
-    const dates = evs.map((e) => e.date).filter(Boolean).sort();
-    const from = dateInput("From", state.from, dates[0], dates[dates.length - 1], (v) => { state.from = v; });
-    const to = dateInput("To", state.to, dates[0], dates[dates.length - 1], (v) => { state.to = v; });
+    const dates = values.filter(Boolean).sort();
+    const from = dateInput("From", st.lo, dates[0], dates[dates.length - 1], (v) => { st.lo = v; });
+    const to = dateInput("To", st.hi, dates[0], dates[dates.length - 1], (v) => { st.hi = v; });
 
     const today = isoToday();
     const presets = presetRow([
-      ["Upcoming", () => { state.from = today; state.to = ""; }],
-      ["Next 30 days", () => { state.from = today; state.to = addDays(today, 30); }],
-      ["Past", () => { state.from = ""; state.to = addDays(today, -1); }],
+      ["Upcoming", () => { st.lo = today; st.hi = ""; }],
+      ["Next 30 days", () => { st.lo = today; st.hi = addDays(today, 30); }],
+      ["Past", () => { st.lo = ""; st.hi = addDays(today, -1); }],
     ]);
     box.append(from, to, presets);
     return box;
@@ -280,20 +357,20 @@ export function mountEventFilter(
     return wrap;
   }
 
-  function audienceFields(): HTMLElement {
+  function numberFields(presetValues: number[], st: { lo: string; hi: string }): HTMLElement {
     const box = document.createElement("div");
     box.className = "ef-fields ef-fields-compact";
-    const min = numberInput("At least", state.minAudience, (v) => { state.minAudience = v; });
-    const max = numberInput("At most", state.maxAudience, (v) => { state.maxAudience = v; });
-    const presets = presetRow(AUDIENCE_PRESETS.map((n) => [
+    const min = numberInput("At least", st.lo, (v) => { st.lo = v; });
+    const max = numberInput("At most", st.hi, (v) => { st.hi = v; });
+    const presets = presetRow(presetValues.map((n) => [
       `${n.toLocaleString()}+`,
-      () => { state.minAudience = n; state.maxAudience = null; },
+      () => { st.lo = String(n); st.hi = ""; },
     ]));
     box.append(min, max, presets);
     return box;
   }
 
-  function numberInput(label: string, value: number | null, set: (v: number | null) => void): HTMLElement {
+  function numberInput(label: string, value: string, set: (v: string) => void): HTMLElement {
     const wrap = document.createElement("label");
     wrap.className = "ef-field";
     const input = document.createElement("input");
@@ -302,10 +379,9 @@ export function mountEventFilter(
     input.step = "1";
     input.inputMode = "numeric";
     input.placeholder = "Any";
-    input.value = value === null ? "" : String(value);
+    input.value = value;
     input.addEventListener("input", () => {
-      const n = input.value === "" ? null : Number(input.value);
-      set(n !== null && Number.isFinite(n) ? n : null);
+      set(input.value !== "" && Number.isFinite(Number(input.value)) ? input.value : "");
       apply();
     });
     wrap.append(document.createTextNode(label), input);
@@ -331,13 +407,13 @@ export function mountEventFilter(
     return row;
   }
 
-  function resetButton(reset: () => void): HTMLElement {
+  function resetButton(run: () => void): HTMLElement {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "ef-reset";
     b.textContent = "Show all";
     b.addEventListener("click", () => {
-      reset();
+      run();
       rebuildPopovers();
       apply();
     });
@@ -346,87 +422,72 @@ export function mountEventFilter(
 
   // ── filtering ─────────────────────────────────────────────────────────────
 
-  function matches(e: Event): boolean {
-    if (state.types.size && !state.types.has(e.type)) return false;
-    if (state.agencies.size && !e.agencies.some((a) => state.agencies.has(a))) return false;
-    if (state.from && !(e.date && e.date >= state.from)) return false;
-    if (state.to && !(e.date && e.date <= state.to)) return false;
-    if (state.minAudience !== null && !(e.audience !== null && e.audience >= state.minAudience)) return false;
-    if (state.maxAudience !== null && !(e.audience !== null && e.audience <= state.maxAudience)) return false;
-    return true;
+  function matches(p: Props): boolean {
+    return config.fields.every((f, i) => {
+      const st = states[i];
+      if (st.kind === "choice") {
+        return !st.selected.size || valuesOf(f as Extract<Field, { kind: "choice" }>, p).some((v) => st.selected.has(v));
+      }
+      if (f.kind === "date") {
+        const d = str(p, f.prop);
+        return (!st.lo || (!!d && d >= st.lo)) && (!st.hi || (!!d && d <= st.hi));
+      }
+      const n = typeof p[f.prop] === "number" ? (p[f.prop] as number) : null;
+      return (!st.lo || (n !== null && n >= Number(st.lo))) && (!st.hi || (n !== null && n <= Number(st.hi)));
+    });
   }
 
-  function isActive(): boolean {
-    return state.types.size > 0 || state.agencies.size > 0 || !!state.from || !!state.to ||
-      state.minAudience !== null || state.maxAudience !== null;
+  const isSet = (st: FieldState) => (st.kind === "choice" ? st.selected.size > 0 : !!(st.lo || st.hi));
+  const isActive = () => states.some(isSet);
+
+  function reset(st: FieldState): void {
+    if (st.kind === "choice") st.selected.clear();
+    else st.lo = st.hi = "";
   }
 
   function apply(): void {
-    if (!events) return;
+    if (!features) return;
     const active = isActive();
     const ids: number[] = [];
-    events.forEach((e, i) => { if (matches(e)) ids.push(i); });
+    features.forEach((f, i) => { if (matches((f.properties ?? {}) as Props)) ids.push(i); });
     const filter = active ? (["in", ["id"], ["literal", ids]] as FilterSpecification) : null;
-    setPOIFilter(map, LAYER_ID, filter);
+    setPOIFilter(map, config.layer, filter);
 
     count.textContent = active
-      ? `${ids.length} of ${events.length} events`
-      : `${events.length} events`;
+      ? `${ids.length} of ${features.length} ${config.noun}`
+      : `${features.length} ${config.noun}`;
     clearAll.hidden = !active;
     exportBtn.disabled = ids.length === 0;
 
-    setButton(typeCtl, choiceSummary(state.types));
-    setButton(agencyCtl, choiceSummary(state.agencies));
-    setButton(dateCtl, dateSummary(state.from, state.to));
-    setButton(audienceCtl, audienceSummary(state.minAudience, state.maxAudience));
+    config.fields.forEach((f, i) => {
+      const st = states[i];
+      const summary = st.kind === "choice" ? choiceSummary(st.selected)
+        : f.kind === "date" ? dateSummary(st.lo, st.hi)
+        : numberSummary(st.lo, st.hi);
+      const c = ctls[i];
+      c.button.textContent = summary ? `${c.label}: ${summary}` : c.label;
+      c.button.classList.toggle("active", !!summary);
+    });
     opts.onChange();
-  }
-
-  function setButton(c: ReturnType<typeof control>, summary: string): void {
-    c.button.textContent = summary ? `${c.label}: ${summary}` : c.label;
-    c.button.classList.toggle("active", !!summary);
   }
 
   // ── export ────────────────────────────────────────────────────────────────
 
-  /** Downloads the events that match the filter (all of them when there is none), by date. */
+  /** Downloads the features that match the filter (all of them when there is none), by date. */
   async function exportXlsx(): Promise<void> {
-    if (!events) return;
+    if (!features) return;
     const { buildXlsx } = await import("../util/xlsx.ts");
-    const rows = events
-      .filter(matches)
-      .sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999") ||
-        (a.props.name ?? "").localeCompare(b.props.name ?? ""))
-      .map((e) => [
-        e.props.name ?? "",
-        e.date ? { date: e.date } : null,
-        e.type,
-        e.agencies.join(", "),
-        e.props.location ?? "",
-        e.props.address ?? "",
-        e.audience,
-        e.props.details ?? "",
-        e.props.link ? { link: e.props.link } : null,
-        e.coords ? round6(e.coords[1]) : null,
-        e.coords ? round6(e.coords[0]) : null,
-      ]);
-    const blob = buildXlsx("Events & Outreach", [
-      { header: "Event", width: 40 },
-      { header: "Date", width: 17 },
-      { header: "Event Type", width: 26 },
-      { header: "Agency", width: 18 },
-      { header: "Location", width: 36 },
-      { header: "Address", width: 36 },
-      { header: "Approx. Audience", width: 16 },
-      { header: "Details", width: 60 },
-      { header: "Link", width: 36 },
-      { header: "Latitude", width: 11 },
-      { header: "Longitude", width: 11 },
-    ], rows);
+    const name = (f: GeoJSON.Feature) => str(f.properties ?? {}, "name");
+    const date = (f: GeoJSON.Feature) => str(f.properties ?? {}, "date_iso") || "9999";
+    const rows = features
+      .filter((f) => matches((f.properties ?? {}) as Props))
+      .sort((a, b) => date(a).localeCompare(date(b)) || name(a).localeCompare(name(b)))
+      .map((f) => config.export.columns.map((c) => c.value((f.properties ?? {}) as Props, f)));
+    const blob = buildXlsx(config.export.sheet, config.export.columns, rows);
 
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `events-outreach-${isoToday()}.xlsx`;
+    a.download = `${config.export.file}-${isoToday()}.xlsx`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
@@ -437,37 +498,28 @@ export function mountEventFilter(
     loading ??= fetch(def!.source)
       .then((r) => r.json() as Promise<GeoJSON.FeatureCollection>)
       .then((fc) => {
-        events = fc.features.map((f) => {
-          const p = (f.properties ?? {}) as EventProps;
-          return {
-            type: p.event_type ?? "",
-            agencies: (p.agency ?? "").split(",").map((a) => a.trim()).filter(Boolean),
-            date: p.date_iso ?? "",
-            audience: typeof p.audience === "number" ? p.audience : null,
-            props: p,
-            coords: f.geometry?.type === "Point" ? (f.geometry.coordinates as [number, number]) : null,
-          };
+        features = fc.features;
+        // A shared link may name values no longer in the data, which would
+        // hide every feature with no checked box to explain it
+        config.fields.forEach((f, i) => {
+          const st = states[i];
+          if (f.kind !== "choice" || st.kind !== "choice") return;
+          const present = new Set(fc.features.flatMap((x) => valuesOf(f, (x.properties ?? {}) as Props)));
+          for (const v of st.selected) if (!present.has(v)) st.selected.delete(v);
         });
-        // A shared link may name types or agencies no longer in the data, which
-        // would hide every event with no checked box to explain it
-        const known = (vals: Set<string>, present: Set<string>) => {
-          for (const v of vals) if (!present.has(v)) vals.delete(v);
-        };
-        known(state.types, new Set(events.map((e) => e.type)));
-        known(state.agencies, new Set(events.flatMap((e) => e.agencies)));
         rebuildPopovers();
         apply();
       })
       .catch((err) => {
         loading = null;
-        count.textContent = "Couldn't load events";
+        count.textContent = `Couldn't load ${config.noun}`;
         console.error("[eventFilter] load failed:", err);
       });
     return loading;
   }
 
   onPOIVisibilityChange((id, visible) => {
-    if (id !== LAYER_ID) return;
+    if (id !== config.layer) return;
     bar.hidden = !visible;
     if (!visible) closeAll();
     else void load();
@@ -478,20 +530,26 @@ export function mountEventFilter(
   if (isActive()) void load();
 
   return {
-    params: () => isActive()
-      ? {
-        types: [...state.types],
-        agencies: [...state.agencies],
-        from: state.from,
-        to: state.to,
-        minAudience: state.minAudience,
-        maxAudience: state.maxAudience,
-      }
-      : undefined,
+    layer: config.layer,
+    params: () => {
+      const out: Record<string, string> = {};
+      config.fields.forEach((f, i) => {
+        const st = states[i];
+        if (!isSet(st)) return;
+        out[f.key] = st.kind === "choice" ? [...st.selected].sort().join(",") : `${st.lo}..${st.hi}`;
+      });
+      return out;
+    },
   };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
+
+function valuesOf(f: Extract<Field, { kind: "choice" }>, p: Props): string[] {
+  const v = str(p, f.prop).trim();
+  if (!v) return [];
+  return f.multi ? v.split(",").map((a) => a.trim()).filter(Boolean) : [v];
+}
 
 function tally(values: string[]): Map<string, number> {
   const m = new Map<string, number>();
@@ -517,10 +575,11 @@ function dateSummary(from: string, to: string): string {
   return "";
 }
 
-function audienceSummary(min: number | null, max: number | null): string {
-  if (min !== null && max !== null) return `${min.toLocaleString()}–${max.toLocaleString()}`;
-  if (min !== null) return `${min.toLocaleString()}+`;
-  if (max !== null) return `up to ${max.toLocaleString()}`;
+function numberSummary(lo: string, hi: string): string {
+  const fmt = (v: string) => Number(v).toLocaleString();
+  if (lo && hi) return `${fmt(lo)}–${fmt(hi)}`;
+  if (lo) return `${fmt(lo)}+`;
+  if (hi) return `up to ${fmt(hi)}`;
   return "";
 }
 
