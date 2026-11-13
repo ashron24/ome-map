@@ -21,6 +21,7 @@
     "data:cb-websites": "tsx scripts/fetch_cb_websites.ts",
     "data:officials": "tsx scripts/process_officials.ts",
     "data:outreach": "tsx scripts/convert_outreach_events.ts",
+    "data:nhac": "tsx scripts/convert_nhac.ts",
     "data:all": "npm run data:boundaries && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs && npm run data:cbos && npm run data:dsny && npm run data:food && npm run data:universities && npm run data:cb-websites && npm run data:officials",
     "data:all:direct": "npm run data:boundaries:direct && npm run data:pois && npm run data:heatmaps && npm run data:census && npm run data:dycd && npm run data:sbs && npm run data:cbos && npm run data:dsny && npm run data:food && npm run data:universities && npm run data:cb-websites && npm run data:officials"
   },

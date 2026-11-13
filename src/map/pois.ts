@@ -20,6 +20,7 @@ export type POIId =
   | "subway-stations"
   | "bus-routes"
   | "outreach-events"
+  | "nhac-sites"
   | "dycd-sites"
   | "sbs-sites"
   | "cbo-sites"
@@ -577,6 +578,23 @@ export const POIS: POIDef[] = [
       { key: "operator", label: "Operator" },
     ],
     attribution: FACDB,
+  },
+  {
+    id: "nhac-sites",
+    label: "DOHMH Neighborhood Health Action Centers",
+    group: "sites",
+    source: dataUrl("nhac-sites.geojson"),
+    geomType: "point",
+    color: "#00838F",
+    popupFields: [
+      { key: "name", label: "Center" },
+      { key: "address", label: "Address" },
+      { key: "website", label: "Website" },
+    ],
+    attribution: {
+      name: "NYC Health Department",
+      href: "https://www.nyc.gov/site/doh/index.page",
+    },
   },
   {
     id: "cbo-sites",
