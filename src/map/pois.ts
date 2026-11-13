@@ -513,9 +513,9 @@ export const POIS: POIDef[] = [
       icons: [["canvass", "icons/ome-canvass.png"], ["event", "icons/ome-event.png"]],
     },
     // Map pins: the tip sits on the location (SVG sources are next to the PNGs).
-    // Same size as before zoomed out, growing faster as you zoom in (≈18 → 72 px wide)
+    // Grows as you zoom in (≈22 → 90 px wide)
     iconAnchor: "bottom",
-    iconSize: ["interpolate", ["linear"], ["zoom"], 10, 1.1, 12, 1.4, 14, 2.2, 16, 3.2, 18, 4.5],
+    iconSize: ["interpolate", ["linear"], ["zoom"], 10, 1.4, 12, 1.75, 14, 2.75, 16, 4, 18, 5.6],
     popupFields: [
       { key: "name", label: "Event" },
       { key: "date", label: "Date" },
